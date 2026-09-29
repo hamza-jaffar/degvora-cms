@@ -8,6 +8,7 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
 
     Route::prefix('users')->name('admin.users.')->group(function () {
         Route::get('index', [UserManagementController::class, 'index'])->name('index');
+        Route::get('create', [UserManagementController::class,'create'])->name('create');
     });
 
 });

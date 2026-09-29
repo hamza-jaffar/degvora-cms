@@ -10,6 +10,11 @@ class UserManagementController extends Controller
 {
     public function index()
     {
-        return Inertia::render("admin/user/index");
+        // return Inertia::render("admin/user/index");
+    }
+
+    public function create()
+    {
+        // return Inertia::render("admin/user/create");
     }
 }
