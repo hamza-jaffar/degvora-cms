@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Helpers\FileHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreFileToGalleryRequest;
 use App\Models\Gallery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -53,24 +53,9 @@ class GalleryController extends Controller
         ]);
     }
 
-    public function upload(Request $request): RedirectResponse
+    public function upload(StoreFileToGalleryRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'files' => ['required', 'array', 'min:1'],
-            'files.*' => Rule::forEach(function (mixed $file): array {
-                $maxSize = $file instanceof UploadedFile
-                    && str_starts_with($file->getMimeType(), 'video/')
-                    ? 90 * 1024
-                    : 10 * 1024;
-
-                return [
-                    'required',
-                    'file',
-                    'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,mp4,mov,webm,avi,mkv',
-                    'max:'.$maxSize,
-                ];
-            }),
-        ]);
+        $validated = $request->validated();
 
         foreach ($validated['files'] as $file) {
             if (FileHelper::upload($file) === null) {
