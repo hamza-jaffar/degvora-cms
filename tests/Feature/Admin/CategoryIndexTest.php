@@ -32,6 +32,28 @@ it('filters categories by inactive status and applies the requested page size', 
             ->where('filters.status', 'inactive'));
 });
 
+it('filters categories by featured status', function () {
+    $user = User::factory()->create();
+    Category::create([
+        'name' => 'Featured category',
+        'slug' => 'featured-category',
+        'is_featured' => true,
+    ]);
+    Category::create([
+        'name' => 'Standard category',
+        'slug' => 'standard-category',
+        'is_featured' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.category.index', ['is_featured' => '1']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/category/index')
+            ->has('categories.data', 1)
+            ->where('categories.data.0.name', 'Featured category')
+            ->where('filters.is_featured', '1'));
+});
+
 it('includes a public thumbnail URL for categories that have an image', function () {
     Storage::fake('public');
     $user = User::factory()->create();

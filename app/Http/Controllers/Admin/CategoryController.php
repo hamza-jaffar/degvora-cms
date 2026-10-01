@@ -20,14 +20,21 @@ class CategoryController extends Controller
     {
         $perPage = (int) $request->input('per_page', 10);
 
-        $perPage = in_array($perPage, [10, 25, 50, 100])
+        $perPage = in_array($perPage, [10, 25, 50, 100], true)
             ? $perPage
             : 10;
 
         $parentCategorySlug = $request->input('parent_category_slug');
+
         $requestedStatus = $request->input('status', '');
+        $requestedFeatured = $request->input('is_featured', '');
+
         $status = in_array($requestedStatus, ['active', 'inactive'], true)
             ? $requestedStatus
+            : '';
+
+        $featured = in_array((string) $requestedFeatured, ['1', '0'], true)
+            ? (string) $requestedFeatured
             : '';
 
         $categories = Category::query()
@@ -55,6 +62,9 @@ class CategoryController extends Controller
             ->when($status !== '', function ($query) use ($status) {
                 $query->where('is_active', $status === 'active');
             })
+            ->when($featured !== '', function ($query) use ($featured) {
+                $query->where('is_featured', $featured === '1');
+            })
             ->orderBy('name')
             ->paginate($perPage)
             ->withQueryString()
@@ -76,6 +86,7 @@ class CategoryController extends Controller
                 'search' => $request->input('search', ''),
                 'per_page' => $perPage,
                 'parent_category_slug' => $parentCategorySlug ?? '',
+                'is_featured' => $featured,
                 'status' => $status,
             ],
 

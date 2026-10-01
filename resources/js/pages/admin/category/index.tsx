@@ -308,6 +308,29 @@ const CategoryIndex = ({
                             <SelectItem value="inactive">Inactive</SelectItem>
                         </SelectContent>
                     </Select>
+
+                    <Select
+                        value={filters.is_featured || 'all'}
+                        onValueChange={(value) =>
+                            applyFilters({
+                                ...filters,
+                                is_featured: value === 'all' ? '' : value,
+                            })
+                        }
+                    >
+                        <SelectTrigger
+                            aria-label="Filter by featured status"
+                            className="w-full bg-background sm:w-44"
+                        >
+                            <Star className="size-4 text-muted-foreground" />
+                            <SelectValue placeholder="All categories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All categories</SelectItem>
+                            <SelectItem value="1">Featured</SelectItem>
+                            <SelectItem value="0">Not featured</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </FilterCard.Left>
 
                 <FilterCard.Right className="shrink-0">
