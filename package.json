@@ -11,6 +11,7 @@
         "types:check": "tsc --noEmit"
     },
     "dependencies": {
+        "@base-ui/react": "^1.8.0",
         "@inertiajs/react": "^3.0.0",
         "@inertiajs/vite": "^3.0.0",
         "@laravel/passkeys": "^0.2.0",
@@ -35,6 +36,7 @@
         "clsx": "^2.1.1",
         "concurrently": "^10.0.3",
         "input-otp": "^1.4.2",
+        "jodit-react": "^5.6.0",
         "laravel-vite-plugin": "^3.0.0",
         "lucide-react": "^0.475.0",
         "react": "^19.2.0",

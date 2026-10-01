@@ -1,7 +1,7 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import galleryRoutes from '@/routes/admin/gallery';
-import { router } from '@inertiajs/react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import galleryRoutes from "@/routes/admin/gallery";
+import { router } from "@inertiajs/react";
 import {
     FileText,
     Film,
@@ -10,29 +10,30 @@ import {
     Search,
     Upload,
     X,
-} from 'lucide-react';
-import { useState } from 'react';
-import DisplayTab, { type GalleryMedia } from './tabs/display';
-import UploadForm from './tabs/uploads-form';
+} from "lucide-react";
+import { useState } from "react";
+import DisplayTab, { type GalleryMedia } from "./tabs/display";
+import UploadForm from "./tabs/uploads-form";
+import Heading from "@/components/heading";
 
-type FilterType = 'all' | 'image' | 'video' | 'other' | 'upload';
+type FilterType = "all" | "image" | "video" | "other" | "upload";
 
 export type GalleryPageProps = {
     media: { data: GalleryMedia[] };
-    counts: Record<'all' | 'image' | 'video' | 'other', number>;
-    filter: Exclude<FilterType, 'upload'>;
+    counts: Record<"all" | "image" | "video" | "other", number>;
+    filter: Exclude<FilterType, "upload">;
 };
 
 const filterOptions = [
-    { label: 'All media', value: 'all', icon: LayoutGrid },
-    { label: 'Images', value: 'image', icon: ImageIcon },
-    { label: 'Videos', value: 'video', icon: Film },
-    { label: 'Other', value: 'other', icon: FileText },
+    { label: "All media", value: "all", icon: LayoutGrid },
+    { label: "Images", value: "image", icon: ImageIcon },
+    { label: "Videos", value: "video", icon: Film },
+    { label: "Other", value: "other", icon: FileText },
 ] as const;
 
 const GalleryPage = ({ media, counts, filter }: GalleryPageProps) => {
     const [selectedFilter, setSelectedFilter] = useState<FilterType>(filter);
-    const [search, setSearch] = useState('');
+    const [search, setSearch] = useState("");
     const visibleMedia = media.data.filter((asset) => {
         const matchesSearch = asset.name
             .toLowerCase()
@@ -44,48 +45,41 @@ const GalleryPage = ({ media, counts, filter }: GalleryPageProps) => {
     const handleFilterChange = (filter: FilterType) => {
         setSelectedFilter(filter);
 
-        if (filter === 'upload') return;
+        if (filter === "upload") return;
 
         router.get(
             galleryRoutes.index.url(),
-            filter === 'all' ? {} : { filter },
+            filter === "all" ? {} : { filter },
             {
-                only: ['media', 'counts', 'filter'],
+                only: ["media", "counts", "filter"],
                 preserveState: true,
                 preserveScroll: false,
                 replace: true,
-                reset: ['media'],
+                reset: ["media"],
             },
         );
     };
 
     return (
-        <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-6 md:px-8 md:py-10">
+        <div className="mx-auto w-full max-w-7xl space-y-8 p-8">
             <header className="flex flex-col justify-between gap-5 border-b border-border pb-6 sm:flex-row sm:items-end">
-                <div className="space-y-2">
-                    <p className="text-xs font-semibold text-emerald-700 uppercase dark:text-emerald-400">
-                        Content workspace
-                    </p>
-                    <h1 className="text-3xl font-semibold text-foreground">
-                        Media library
-                    </h1>
-                    <p className="max-w-xl text-sm text-muted-foreground">
-                        Find and manage the images, clips, and documents used
-                        across your site.
-                    </p>
-                </div>
+                <Heading
+                    title="Media library"
+                    description="Find and manage the images, clips, and documents used
+                        across your site."
+                />
                 <Button
                     onClick={() =>
                         handleFilterChange(
-                            selectedFilter === 'upload' ? 'all' : 'upload',
+                            selectedFilter === "upload" ? "all" : "upload",
                         )
                     }
                     className="shrink-0 gap-2"
                 >
-                    {selectedFilter === 'upload' ? <X /> : <Upload />}
-                    {selectedFilter === 'upload'
-                        ? 'Close uploader'
-                        : 'Upload media'}
+                    {selectedFilter === "upload" ? <X /> : <Upload />}
+                    {selectedFilter === "upload"
+                        ? "Close uploader"
+                        : "Upload media"}
                 </Button>
             </header>
 
@@ -95,28 +89,28 @@ const GalleryPage = ({ media, counts, filter }: GalleryPageProps) => {
             >
                 {[
                     {
-                        label: 'Total files',
+                        label: "Total files",
                         value: counts.all,
                         icon: LayoutGrid,
-                        color: 'text-foreground',
+                        color: "text-foreground",
                     },
                     {
-                        label: 'Images',
+                        label: "Images",
                         value: counts.image,
                         icon: ImageIcon,
-                        color: 'text-emerald-700 dark:text-emerald-400',
+                        color: "text-emerald-700 dark:text-emerald-400",
                     },
                     {
-                        label: 'Videos',
+                        label: "Videos",
                         value: counts.video,
                         icon: Film,
-                        color: 'text-sky-700 dark:text-sky-400',
+                        color: "text-sky-700 dark:text-sky-400",
                     },
                     {
-                        label: 'Other files',
+                        label: "Other files",
                         value: counts.other,
                         icon: FileText,
-                        color: 'text-amber-700 dark:text-amber-400',
+                        color: "text-amber-700 dark:text-amber-400",
                     },
                 ].map((stat) => (
                     <div
@@ -139,8 +133,8 @@ const GalleryPage = ({ media, counts, filter }: GalleryPageProps) => {
                 ))}
             </section>
 
-            {selectedFilter === 'upload' ? (
-                <UploadForm onUploadSuccess={() => handleFilterChange('all')} />
+            {selectedFilter === "upload" ? (
+                <UploadForm onUploadSuccess={() => handleFilterChange("all")} />
             ) : (
                 <>
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -160,8 +154,8 @@ const GalleryPage = ({ media, counts, filter }: GalleryPageProps) => {
                                         }
                                         className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                                             isActive
-                                                ? 'bg-background text-foreground shadow-sm'
-                                                : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:bg-background/70 hover:text-foreground"
                                         }`}
                                     >
                                         <Icon

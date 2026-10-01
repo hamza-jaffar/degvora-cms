@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, GalleryHorizontal, LayoutGrid, Users } from 'lucide-react';
+import { BookOpen, Folder, FolderGit2, GalleryHorizontal, LayoutGrid, Tags, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -17,6 +17,7 @@ import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import users from '@/routes/admin/users';
 import gallery from '@/routes/admin/gallery';
+import category from '@/routes/admin/category';
 
 const mainNavItems: NavItem[] = [
     {
@@ -25,9 +26,14 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
+        title: 'Category',
+        href: category.index(),
+        icon: Tags,
+    },
+    {
         title: 'Gallery',
         href: gallery.index(),
-        icon: GalleryHorizontal,
+        icon: Folder,
     }
 ];
 
@@ -64,7 +70,7 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
+                {/* <NavFooter items={footerNavItems} className="mt-auto" /> */}
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

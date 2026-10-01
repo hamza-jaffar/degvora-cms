@@ -68,6 +68,35 @@ class GalleryController extends Controller
         return to_route('admin.gallery.index');
     }
 
+    public function uploadForPicker(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'file' => ['required', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:10240'],
+        ]);
+
+        $file = $request->file('file');
+
+        if (! $file instanceof UploadedFile) {
+            return back()->withErrors(['file' => __('Please select an image.')]);
+        }
+
+        $asset = FileHelper::upload($file);
+
+        if ($asset === null) {
+            return back()->withErrors(['file' => __('The file could not be stored.')]);
+        }
+
+        return back()->with('pickerAsset', [
+            'id' => $asset->id,
+            'name' => $asset->original_name,
+            'alt' => $asset->alt,
+            'path' => $asset->path,
+            'url' => Storage::disk($asset->disk)->url($asset->path),
+            'type' => 'image',
+            'mimeType' => $asset->mime_type,
+        ]);
+    }
+
     public function destroy(Gallery $gallery): RedirectResponse
     {
         if (! FileHelper::delete($gallery)) {
