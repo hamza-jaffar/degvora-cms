@@ -1,4 +1,4 @@
-import { Category } from "./data";
+import { Category } from './data';
 
 type Link = {
     active: boolean;
@@ -24,4 +24,8 @@ type RootStructure = {
 
 export type CategoryIndexPagination = RootStructure & {
     data: Category[];
+};
+
+export type ProductIndexPagination = RootStructure & {
+    data: import('./data').Product[];
 };

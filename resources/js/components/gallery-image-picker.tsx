@@ -44,6 +44,9 @@ type GalleryImagePickerProps = {
     filterUrl: string;
     selectedImage: GalleryImage | null;
     onSelect: (image: GalleryImage) => void;
+    multiple?: boolean;
+    selectedImages?: GalleryImage[];
+    onSelectMultiple?: (images: GalleryImage[]) => void;
 };
 
 const filterOptions = [
@@ -62,9 +65,13 @@ const GalleryImagePicker = ({
     filterUrl,
     selectedImage,
     onSelect,
+    multiple = false,
+    selectedImages = [],
+    onSelectMultiple,
 }: GalleryImagePickerProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [activeImage, setActiveImage] = useState<GalleryImage | null>(null);
+    const [activeImages, setActiveImages] = useState<GalleryImage[]>([]);
     const [selectedFilter, setSelectedFilter] = useState<FilterType>(filter);
     const [searchTerm, setSearchTerm] = useState(search);
     const [isUploading, setIsUploading] = useState(false);
@@ -130,7 +137,18 @@ const GalleryImagePicker = ({
                         }
                     ).pickerAsset;
 
-                    if (uploadedImage) setActiveImage(uploadedImage);
+                    if (uploadedImage) {
+                        setActiveImage(uploadedImage);
+                        if (multiple) {
+                            setActiveImages((current) =>
+                                current.some(
+                                    (image) => image.id === uploadedImage.id,
+                                )
+                                    ? current
+                                    : [...current, uploadedImage],
+                            );
+                        }
+                    }
                 },
                 onFinish: () => {
                     setIsUploading(false);
@@ -149,6 +167,7 @@ const GalleryImagePicker = ({
                 className="gap-2"
                 onClick={() => {
                     setActiveImage(selectedImage);
+                    setActiveImages(selectedImages);
                     setIsOpen(true);
                 }}
             >
@@ -319,7 +338,13 @@ const GalleryImagePicker = ({
                                 media.data.map((asset) => {
                                     const isImage = asset.type === 'image';
                                     const isActive =
-                                        isImage && activeImage?.id === asset.id;
+                                        isImage &&
+                                        (multiple
+                                            ? activeImages.some(
+                                                  (image) =>
+                                                      image.id === asset.id,
+                                              )
+                                            : activeImage?.id === asset.id);
                                     const FileIcon =
                                         asset.type === 'video'
                                             ? Film
@@ -336,9 +361,28 @@ const GalleryImagePicker = ({
                                                     : `${asset.type} file ${asset.name} cannot be selected as a category image`
                                             }
                                             aria-pressed={isActive}
-                                            onClick={() =>
-                                                setActiveImage(asset)
-                                            }
+                                            onClick={() => {
+                                                setActiveImage(asset);
+                                                if (multiple) {
+                                                    setActiveImages(
+                                                        (current) =>
+                                                            current.some(
+                                                                (image) =>
+                                                                    image.id ===
+                                                                    asset.id,
+                                                            )
+                                                                ? current.filter(
+                                                                      (image) =>
+                                                                          image.id !==
+                                                                          asset.id,
+                                                                  )
+                                                                : [
+                                                                      ...current,
+                                                                      asset,
+                                                                  ],
+                                                    );
+                                                }
+                                            }}
                                             className={`group relative overflow-hidden rounded-md border bg-card text-left transition-[border-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                                                 isActive
                                                     ? 'border-primary ring-2 ring-primary/30'
@@ -405,9 +449,11 @@ const GalleryImagePicker = ({
 
                     <DialogFooter className="border-t border-border bg-muted/20 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-7">
                         <p className="min-w-0 truncate text-left text-sm text-muted-foreground">
-                            {activeImage
-                                ? `Selected: ${activeImage.name}`
-                                : 'Choose an image to continue'}
+                            {multiple
+                                ? `${activeImages.length} image${activeImages.length === 1 ? '' : 's'} selected`
+                                : activeImage
+                                  ? `Selected: ${activeImage.name}`
+                                  : 'Choose an image to continue'}
                         </p>
                         <div className="flex justify-end gap-2">
                             <Button
@@ -419,15 +465,27 @@ const GalleryImagePicker = ({
                             </Button>
                             <Button
                                 type="button"
-                                disabled={!activeImage}
+                                disabled={
+                                    multiple
+                                        ? activeImages.length === 0
+                                        : !activeImage
+                                }
                                 onClick={() => {
+                                    if (multiple) {
+                                        onSelectMultiple?.(activeImages);
+                                        setIsOpen(false);
+                                        return;
+                                    }
+
                                     if (activeImage) {
                                         onSelect(activeImage);
                                         setIsOpen(false);
                                     }
                                 }}
                             >
-                                Use selected image
+                                {multiple
+                                    ? 'Use selected images'
+                                    : 'Use selected image'}
                             </Button>
                         </div>
                     </DialogFooter>

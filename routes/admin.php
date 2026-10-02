@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\GalleryController;
+use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,5 +30,9 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
         Route::delete('/delete', [CategoryController::class, 'delete'])->name('delete');
 
     });
+
+    Route::resource('products', ProductController::class)->names('admin.products');
+    Route::post('products/{product}/restore', [ProductController::class, 'restore'])->name('admin.products.restore')->withTrashed();
+    Route::delete('products/{product}/force-delete', [ProductController::class, 'forceDelete'])->name('admin.products.force-delete')->withTrashed();
 
 });
