@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import {
     BookOpen,
+    FileText,
     Folder,
     FolderGit2,
     LayoutGrid,
@@ -26,12 +27,18 @@ import users from '@/routes/admin/users';
 import gallery from '@/routes/admin/gallery';
 import category from '@/routes/admin/category';
 import products from '@/routes/admin/products';
+import pages from '@/routes/admin/page';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Pages',
+        href: pages.index(),
+        icon: FileText,
     },
     {
         title: 'Category',
@@ -65,7 +72,7 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon" variant="floating">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>

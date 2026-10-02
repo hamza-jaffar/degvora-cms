@@ -1,3 +1,39 @@
+export type GalleryImage = {
+    id: number;
+    name: string;
+    alt: string;
+    path: string;
+    url: string;
+    type: 'image' | 'video' | 'other';
+    mimeType: string;
+};
+
+export type Page = {
+    id: number;
+    name: string;
+    slug: string;
+    path: string;
+    excerpt: string | null;
+    content: string | null;
+    parent_id: number | null;
+    parent?: Pick<Page, 'id' | 'name' | 'slug'> | null;
+    meta_title: string | null;
+    meta_description: string | null;
+    canonical_url: string | null;
+    robots: string;
+    status: 'draft' | 'published' | 'scheduled' | 'archived';
+    visibility: 'public' | 'private' | 'password';
+    password: string | null;
+    published_at: string | null;
+    template: string;
+    sort_order: number;
+    is_featured: boolean;
+    featured_media: string | null;
+    featured_media_asset?: GalleryImage | null;
+    created_at: string;
+    deleted_at?: string | null;
+};
+
 export type Category = {
     id: number;
     parent_id: number | null;

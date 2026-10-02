@@ -61,7 +61,7 @@ const GalleryPage = ({ media, counts, filter }: GalleryPageProps) => {
     };
 
     return (
-        <div className="mx-auto w-full max-w-7xl space-y-8 p-8">
+        <div className="mx-auto w-full pace-y-8 p-8">
             <header className="flex flex-col justify-between gap-5 border-b border-border pb-6 sm:flex-row sm:items-end">
                 <Heading
                     title="Media library"

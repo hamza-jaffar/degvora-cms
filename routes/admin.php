@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\GalleryController;
+use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
+Route::redirect('/admin', '/admin/dashboard');
 Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'admin/dashboard')->name('dashboard');
 
@@ -34,5 +36,9 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
     Route::resource('products', ProductController::class)->names('admin.products');
     Route::post('products/{product}/restore', [ProductController::class, 'restore'])->name('admin.products.restore')->withTrashed();
     Route::delete('products/{product}/force-delete', [ProductController::class, 'forceDelete'])->name('admin.products.force-delete')->withTrashed();
+
+    Route::resource('page', PageController::class)->names('admin.page');
+    Route::post('page/{page}/restore', [PageController::class, 'restore'])->name('admin.page.restore')->withTrashed();
+    Route::delete('page/{page}/force-delete', [PageController::class, 'forceDelete'])->name('admin.page.force-delete')->withTrashed();
 
 });

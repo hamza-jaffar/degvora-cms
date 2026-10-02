@@ -52,3 +52,29 @@ export type ProductFormPageProps = {
 export type ProductShowPageProps = {
     product: Product;
 };
+
+import { GalleryImage, Page } from './data';
+import { PageIndexPagination } from './paginations';
+
+export type PageFilters = {
+    search: string;
+    status: string;
+    trashed: string;
+    sort: string;
+    direction: string;
+    per_page: number;
+};
+
+export type PageIndexPageProps = {
+    pages: PageIndexPagination;
+    filters: PageFilters;
+};
+
+export type PageFormPageProps = {
+    page: Page | null;
+    parentPages: Pick<Page, 'id' | 'name' | 'slug'>[];
+    media: { data: GalleryImage[] };
+    counts: Record<'all' | 'image' | 'video' | 'other', number>;
+    filter: 'all' | 'image' | 'video' | 'other';
+    search: string;
+};
