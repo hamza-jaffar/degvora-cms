@@ -58,12 +58,9 @@ export type PageFormProps = {
 };
 
 const defaultTemplates = [
-    { value: "page", label: "Default Page Template" },
-    { value: "homepage", label: "Homepage Layout" },
-    { value: "landing", label: "Landing Page Layout" },
-    { value: "contact", label: "Contact Us Template" },
+    { value: "page", label: "Default Page" },
+    { value: "template", label: "Theme template" },
     { value: "full-width", label: "Full Width (No Sidebar)" },
-    { value: "sidebar", label: "Standard Page with Sidebar" },
 ];
 
 const PageForm = ({

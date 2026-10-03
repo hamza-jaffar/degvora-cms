@@ -5,7 +5,13 @@ import tailwindcss from '@tailwindcss/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
+import { resolve, sep } from 'node:path';
 import { defineConfig, lazyPlugins } from 'vite-plus';
+
+const ignoredThemeDirectories = [
+    resolve(process.cwd(), 'themes'),
+    resolve(process.cwd(), 'storage', 'app', 'temp', 'themes'),
+];
 
 export default defineConfig({
     plugins: lazyPlugins(() => [
@@ -35,6 +41,15 @@ export default defineConfig({
                 '**/.claude/**',
                 '**/.cursor/**',
                 '**/.junie/**',
+                (path) => {
+                    const resolvedPath = resolve(path);
+
+                    return ignoredThemeDirectories.some(
+                        (directory) =>
+                            resolvedPath === directory ||
+                            resolvedPath.startsWith(`${directory}${sep}`),
+                    );
+                },
                 '**/vendor/**',
             ],
         },

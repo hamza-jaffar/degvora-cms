@@ -15,6 +15,8 @@ return [
 
     'name' => env('APP_NAME', 'DEGVORA CMS'),
 
+    'version' => env('DEGVORA_CMS_VERSION', '1.0.0'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

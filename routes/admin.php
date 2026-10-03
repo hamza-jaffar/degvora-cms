@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,5 +41,18 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
     Route::resource('page', PageController::class)->names('admin.page');
     Route::post('page/{page}/restore', [PageController::class, 'restore'])->name('admin.page.restore')->withTrashed();
     Route::delete('page/{page}/force-delete', [PageController::class, 'forceDelete'])->name('admin.page.force-delete')->withTrashed();
+
+    Route::prefix('themes')->name('admin.themes.')->group(function () {
+        Route::get('/', [ThemeController::class, 'index'])->name('index');
+        Route::post('/upload', [ThemeController::class, 'upload'])->name('upload');
+        Route::post('/active', [ThemeController::class, 'setActive'])->name('active');
+        Route::get('/editor', [ThemeController::class, 'editor'])->name('editor');
+        Route::get('/file', [ThemeController::class, 'getFile'])->name('file');
+        Route::put('/file', [ThemeController::class, 'saveFile'])->name('save-file');
+        Route::delete('/file', [ThemeController::class, 'deleteFile'])->name('delete-file');
+        Route::post('/file/create', [ThemeController::class, 'createFile'])->name('create-file');
+        Route::post('/directory/create', [ThemeController::class, 'createDirectory'])->name('create-directory');
+        Route::delete('/{theme}', [ThemeController::class, 'destroy'])->name('destroy');
+    });
 
 });

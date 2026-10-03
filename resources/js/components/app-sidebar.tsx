@@ -7,6 +7,7 @@ import {
     LayoutGrid,
     Package,
     Tags,
+    Paintbrush,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -28,6 +29,7 @@ import gallery from '@/routes/admin/gallery';
 import category from '@/routes/admin/category';
 import products from '@/routes/admin/products';
 import pages from '@/routes/admin/page';
+import themes from '@/routes/admin/themes';
 
 const mainNavItems: NavItem[] = [
     {
@@ -54,6 +56,11 @@ const mainNavItems: NavItem[] = [
         title: 'Gallery',
         href: gallery.index(),
         icon: Folder,
+    },
+    {
+        title: 'Themes',
+        href: themes.index(),
+        icon: Paintbrush,
     },
 ];
 
