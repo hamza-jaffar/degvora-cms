@@ -1,4 +1,5 @@
 import GalleryImagePicker from "@/components/gallery-image-picker";
+import ClientJoditEditor from "@/components/client-jodit-editor";
 import Editor from "@monaco-editor/react";
 import InputError from "@/components/input-error";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,6 @@ import pages from "@/routes/admin/page";
 import type { GalleryImage, Page } from "@/types/data";
 import { RouteDefinition } from "@/wayfinder";
 import { Form, Link } from "@inertiajs/react";
-import JoditEditor from "jodit-react";
 import {
     ArrowLeft,
     Check,
@@ -60,7 +60,6 @@ export type PageFormProps = {
 const defaultTemplates = [
     { value: "page", label: "Default Page" },
     { value: "template", label: "Theme template" },
-    { value: "full-width", label: "Full Width (No Sidebar)" },
 ];
 
 const PageForm = ({
@@ -392,7 +391,7 @@ const PageForm = ({
 
                                 {editorMode === "visual" ? (
                                     <div className="prose-editor min-h-[420px]">
-                                        <JoditEditor
+                                        <ClientJoditEditor
                                             value={content}
                                             config={editorConfig}
                                             onBlur={(newContent) =>

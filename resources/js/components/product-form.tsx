@@ -1,4 +1,5 @@
 import GalleryImagePicker from "@/components/gallery-image-picker";
+import ClientJoditEditor from "@/components/client-jodit-editor";
 import type { GalleryImage } from "@/components/gallery-image-picker";
 import Heading from "@/components/heading";
 import InputError from "@/components/input-error";
@@ -19,7 +20,6 @@ import products from "@/routes/admin/products";
 import type { ProductCategoryOption } from "@/types/data";
 import type { ProductFormPageProps } from "@/types/props";
 import { Form, Link } from "@inertiajs/react";
-import JoditEditor from "jodit-react";
 import { Check, Search, X } from "lucide-react";
 import { useState } from "react";
 
@@ -318,7 +318,7 @@ const ProductForm = ({
                                     <Label htmlFor="description">
                                         Description
                                     </Label>
-                                    <JoditEditor
+                                    <ClientJoditEditor
                                         id="description"
                                         name="description"
                                         value={product?.description ?? ""}

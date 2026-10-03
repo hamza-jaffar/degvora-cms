@@ -1,6 +1,7 @@
 import GalleryImagePicker, {
     type GalleryImage,
 } from '@/components/gallery-image-picker';
+import ClientJoditEditor from '@/components/client-jodit-editor';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,6 @@ import { Switch } from '@/components/ui/switch';
 import categoryRoutes from '@/routes/admin/category';
 import type { Category } from '@/types/data';
 import { Form, Link } from '@inertiajs/react';
-import JoditEditor from 'jodit-react';
 import { Check, ChevronDown, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -272,7 +272,7 @@ const CategoryForm = ({
 
                         <div className="space-y-2">
                             <Label htmlFor="description">Description</Label>
-                            <JoditEditor
+                            <ClientJoditEditor
                                 id="description"
                                 name="description"
                                 value={category?.description ?? ''}
@@ -413,7 +413,7 @@ const CategoryForm = ({
                             <Label htmlFor="meta_description">
                                 Meta Description
                             </Label>
-                            <JoditEditor
+                            <ClientJoditEditor
                                 id="meta_description"
                                 name="meta_description"
                                 value={category?.meta_description ?? ''}

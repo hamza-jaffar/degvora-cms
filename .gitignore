@@ -43,3 +43,7 @@ yarn-error.log
 /opencode.json
 /opencode.jsonc
 /themes/
+!/themes/
+/themes/*
+!/themes/default/
+!/themes/default/**
