@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\GalleryController;
+use App\Http\Controllers\Admin\MenuController;
+use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ThemeController;
@@ -55,4 +57,19 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
         Route::delete('/{theme}', [ThemeController::class, 'destroy'])->name('destroy');
     });
 
+    Route::resource('menus', MenuController::class)
+        ->except('show')
+        ->names('admin.menus');
+    Route::get('menus/{menu}/items', [MenuItemController::class, 'index'])
+        ->name('admin.menus.items.index');
+    Route::post('menus/{menu}/items', [MenuItemController::class, 'store'])
+        ->name('admin.menus.items.store');
+    Route::put('menus/{menu}/items/reorder', [MenuItemController::class, 'reorder'])
+        ->name('admin.menus.items.reorder');
+    Route::put('menus/{menu}/items/{menuItem}', [MenuItemController::class, 'update'])
+        ->scopeBindings()
+        ->name('admin.menus.items.update');
+    Route::delete('menus/{menu}/items/{menuItem}', [MenuItemController::class, 'destroy'])
+        ->scopeBindings()
+        ->name('admin.menus.items.destroy');
 });

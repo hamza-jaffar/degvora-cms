@@ -5,6 +5,7 @@ import {
     Folder,
     FolderGit2,
     LayoutGrid,
+    ListTree,
     Package,
     Tags,
     Paintbrush,
@@ -30,6 +31,7 @@ import category from '@/routes/admin/category';
 import products from '@/routes/admin/products';
 import pages from '@/routes/admin/page';
 import themes from '@/routes/admin/themes';
+import menus from '@/routes/admin/menus';
 
 const mainNavItems: NavItem[] = [
     {
@@ -41,6 +43,11 @@ const mainNavItems: NavItem[] = [
         title: 'Pages',
         href: pages.index(),
         icon: FileText,
+    },
+    {
+        title: 'Menus',
+        href: menus.index(),
+        icon: ListTree,
     },
     {
         title: 'Category',
