@@ -237,7 +237,7 @@ const PageForm = ({
                             <Button
                                 type="submit"
                                 disabled={processing}
-                                className="gap-2 min-w-[120px]"
+                                className="gap-2 min-w-30"
                             >
                                 {processing && <Spinner className="size-4" />}
                                 {page ? "Update Page" : "Publish Page"}
