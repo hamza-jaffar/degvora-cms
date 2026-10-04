@@ -88,7 +88,7 @@ const UploadForm: React.FC<{ onUploadSuccess: () => void }> = ({
     };
 
     return (
-        <div className="mx-auto max-w-xl rounded-lg border border-border bg-card p-6">
+        <div className="mx-auto max-w-xl rounded-lg mt-4 border border-border bg-card p-6">
             <div className="mb-6">
                 <h2 className="text-xl font-semibold text-foreground">
                     Upload media

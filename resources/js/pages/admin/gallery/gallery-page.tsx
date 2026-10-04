@@ -137,7 +137,7 @@ const GalleryPage = ({ media, counts, filter }: GalleryPageProps) => {
                 <UploadForm onUploadSuccess={() => handleFilterChange("all")} />
             ) : (
                 <>
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-col py-3 gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-border bg-muted/40 p-1">
                             {filterOptions.map((option) => {
                                 const Icon = option.icon;

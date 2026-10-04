@@ -36,6 +36,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "concurrently": "^10.0.3",
+        "countries-list": "^3.4.1",
         "input-otp": "^1.4.2",
         "jodit-react": "^5.6.0",
         "laravel-vite-plugin": "^3.0.0",

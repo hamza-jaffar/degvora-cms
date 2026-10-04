@@ -30,16 +30,15 @@
             }
         </style>
 
-        <link rel="icon" href="/assets/degvora-cms-logo.png" sizes="any">
-        <link rel="icon" href="/assets/degvora-cms-logo.png" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/assets/degvora-cms-logo.png">
+        <link rel="icon" href="{{ $siteSettings['favicon_url'] ?? '/assets/degvora-cms-logo.png' }}">
+        <link rel="apple-touch-icon" href="{{ $siteSettings['favicon_url'] ?? '/assets/degvora-cms-logo.png' }}">
 
         @fonts
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         <x-inertia::head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
+            <title>{{ $siteSettings['name'] ?? config('app.name', 'Laravel') }}</title>
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">

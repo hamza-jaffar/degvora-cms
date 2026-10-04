@@ -156,6 +156,80 @@ it('uses the default theme when the configured active theme is unavailable', fun
         ->assertSee('<p>Default theme content</p>', false);
 });
 
+it('renders configured SEO metadata and analytics on default public pages', function () {
+    Setting::query()->create([
+        'key' => 'meta_title',
+        'value' => 'Global page title',
+    ]);
+    Setting::query()->create([
+        'key' => 'meta_description',
+        'value' => 'A default description for the website.',
+    ]);
+    Setting::query()->create([
+        'key' => 'google_analytics_id',
+        'value' => 'G-ABC12345',
+    ]);
+    Setting::query()->create([
+        'key' => 'google_site_verification',
+        'value' => 'verify-token-123',
+    ]);
+
+    Page::query()->create([
+        'name' => 'Searchable',
+        'slug' => 'searchable',
+        'path' => 'searchable',
+        'template' => 'page',
+        'status' => 'published',
+        'visibility' => 'public',
+        'content' => 'Page content',
+    ]);
+
+    $this->get('/searchable')
+        ->assertOk()
+        ->assertSee('<title>Global page title</title>', false)
+        ->assertSee('A default description for the website.')
+        ->assertSee('G-ABC12345')
+        ->assertSee('verify-token-123');
+});
+
+it('makes safe site settings available to active theme templates', function () {
+    $themeSlug = 'storefront-'.Str::lower(Str::random(12));
+    $themePath = createStorefrontTheme($themeSlug, [
+        'page' => "@extends('theme::layouts.app')\n@section('content'){{ \$siteSettings['tagline'] ?? 'MISSING' }} @endsection",
+    ]);
+
+    Setting::query()->create([
+        'key' => 'active_theme',
+        'value' => $themeSlug,
+    ]);
+    Setting::query()->create([
+        'key' => 'tagline',
+        'value' => 'Theme site tagline',
+    ]);
+    Setting::query()->create([
+        'key' => 'mail_password',
+        'value' => 'sensitive-ciphertext',
+    ]);
+    Page::query()->create([
+        'name' => 'Themed',
+        'slug' => 'themed-settings',
+        'path' => 'themed-settings',
+        'template' => 'template',
+        'status' => 'published',
+        'visibility' => 'public',
+        'content' => 'Theme content',
+    ]);
+
+    try {
+        $this->get('/themed-settings')
+            ->assertOk()
+            ->assertSee('Theme site tagline')
+            ->assertDontSee('sensitive-ciphertext');
+    } finally {
+        File::deleteDirectory($themePath);
+    }
+});
+
 it('uses the existing page view when the page template is page', function () {
     $themeSlug = 'storefront-'.Str::lower(Str::random(12));
     $themePath = createStorefrontTheme($themeSlug, [

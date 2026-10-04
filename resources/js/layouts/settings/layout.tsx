@@ -9,6 +9,7 @@ import { edit as editAppearance } from '@/routes/appearance';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
 import type { NavItem } from '@/types';
+import admin from '@/routes/admin';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -24,6 +25,11 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Appearance',
         href: editAppearance(),
+        icon: null,
+    },
+    {
+        title: 'Site',
+        href: admin.setting.index(),
         icon: null,
     },
 ];
@@ -67,8 +73,8 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
                 <Separator className="my-6 lg:hidden" />
 
-                <div className="flex-1 md:max-w-2xl">
-                    <section className="max-w-xl space-y-12">
+                <div className="min-w-0 flex-1 md:max-w-5xl">
+                    <section className="max-w-5xl space-y-6">
                         {children}
                     </section>
                 </div>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\UserManagementController;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +44,12 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
     Route::resource('page', PageController::class)->names('admin.page');
     Route::post('page/{page}/restore', [PageController::class, 'restore'])->name('admin.page.restore')->withTrashed();
     Route::delete('page/{page}/force-delete', [PageController::class, 'forceDelete'])->name('admin.page.force-delete')->withTrashed();
+
+    Route::get('/settings/site', [SettingController::class, 'index'])->name('admin.setting.index');
+    Route::post('/setting/site/update', [SettingController::class, 'update'])->name('admin.setting.update');
+    Route::post('/settings/site/test-mail', [SettingController::class, 'testMail'])
+        ->middleware('throttle:3,1')
+        ->name('admin.setting.mail-test');
 
     Route::prefix('themes')->name('admin.themes.')->group(function () {
         Route::get('/', [ThemeController::class, 'index'])->name('index');
