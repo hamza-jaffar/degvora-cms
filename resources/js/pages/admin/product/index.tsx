@@ -19,7 +19,9 @@ import type { ProductFilters, ProductIndexPageProps } from "@/types/props";
 import { Link, router } from "@inertiajs/react";
 import {
     ArrowDownUp,
+    Copy,
     Eye,
+    Loader2,
     PackagePlus,
     Pencil,
     RotateCcw,
@@ -49,6 +51,18 @@ const ProductIndex = ({
     );
     const [productToForceDelete, setProductToForceDelete] =
         useState<Product | null>(null);
+    const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
+
+    const handleDuplicate = (product: Product) => {
+        setDuplicatingId(product.id);
+        router.post(
+            productsRoute.duplicate(product.slug),
+            {},
+            {
+                onFinish: () => setDuplicatingId(null),
+            },
+        );
+    };
 
     useEffect(() => setSearch(filters.search), [filters.search]);
     useEffect(() => setMinPrice(filters.min_price), [filters.min_price]);
@@ -208,6 +222,22 @@ const ProductIndex = ({
                             >
                                 <Pencil />
                             </IconLink>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 text-muted-foreground hover:text-foreground cursor-pointer"
+                                aria-label={`Copy / Duplicate ${product.name}`}
+                                title="Copy / Duplicate product"
+                                disabled={duplicatingId === product.id}
+                                onClick={() => handleDuplicate(product)}
+                            >
+                                {duplicatingId === product.id ? (
+                                    <Loader2 className="size-4 animate-spin" />
+                                ) : (
+                                    <Copy className="size-4" />
+                                )}
+                            </Button>
                             <Button
                                 type="button"
                                 variant="ghost"

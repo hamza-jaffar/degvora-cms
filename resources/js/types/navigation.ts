@@ -11,4 +11,6 @@ export type NavItem = {
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon | null;
     isActive?: boolean;
+    /** If set, the item is only shown when this CMS feature is enabled. */
+    feature?: string;
 };

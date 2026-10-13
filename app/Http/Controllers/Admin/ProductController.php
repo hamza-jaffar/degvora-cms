@@ -143,6 +143,35 @@ class ProductController extends Controller
         return to_route('admin.products.index');
     }
 
+    public function duplicate(Products $product): RedirectResponse
+    {
+        $newProduct = $product->replicate();
+        $newProduct->name = $product->name.' (Copy)';
+        $newProduct->slug = SlugHelper::unique($newProduct->name, table: 'products');
+
+        if ($product->sku) {
+            $baseSku = $product->sku.'-COPY';
+            $sku = $baseSku;
+            $counter = 1;
+            while (Products::withTrashed()->where('sku', $sku)->exists()) {
+                $sku = $baseSku.'-'.$counter;
+                $counter++;
+            }
+            $newProduct->sku = $sku;
+        } else {
+            $newProduct->sku = null;
+        }
+
+        $newProduct->barcode = null;
+        $newProduct->status = 'draft';
+        $newProduct->published_at = null;
+        $newProduct->save();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Product duplicated successfully.')]);
+
+        return to_route('admin.products.edit', $newProduct->slug);
+    }
+
     public function destroy(Products $product): RedirectResponse
     {
         $product->delete();

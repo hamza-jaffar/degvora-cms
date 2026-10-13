@@ -6,10 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateSiteSettingsRequest;
 use App\Models\Gallery;
 use App\Models\Setting;
-use App\Services\SiteSettingsService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -32,6 +33,7 @@ class SettingController extends Controller
         'timezone',
         'locale',
         'logo',
+        'footer_logo',
         'favicon',
         'seo_image',
         'meta_title',
@@ -58,13 +60,16 @@ class SettingController extends Controller
         'posts_per_page',
     ];
 
-    public function index(Request $request, SiteSettingsService $siteSettings): Response
+    public function index(Request $request): Response
     {
-        $settings = $siteSettings->values();
+        $settings = Setting::query()
+            ->whereIn('key', [...self::SETTING_KEYS, 'mail_password'])
+            ->get(['key', 'value'])
+            ->keyBy('key');
 
         $values = collect(self::SETTING_KEYS)
-            ->reject(fn (string $key): bool => in_array($key, ['logo', 'favicon', 'seo_image'], true))
-            ->mapWithKeys(fn (string $key): array => [$key => $settings[$key] ?? '']);
+            ->reject(fn (string $key): bool => in_array($key, ['logo', 'footer_logo', 'favicon', 'seo_image'], true))
+            ->mapWithKeys(fn (string $key): array => [$key => $settings->get($key)?->value ?? '']);
         $values = $values->merge([
             'mail_mailer' => $values->get('mail_mailer') ?: config('mail.default', 'log'),
             'mail_host' => $values->get('mail_host') ?: config('mail.mailers.smtp.host', ''),
@@ -83,27 +88,29 @@ class SettingController extends Controller
                 ? $request->query('active_tab')
                 : null,
             'settings' => $values,
-            'logoUrl' => $this->publicAssetUrl($settings['logo'] ?? null),
-            'faviconUrl' => $this->publicAssetUrl($settings['favicon'] ?? null),
-            'seoImageUrl' => $this->publicAssetUrl($settings['seo_image'] ?? null),
-            'logoImage' => $this->galleryImageData($settings['logo'] ?? null),
-            'faviconImage' => $this->galleryImageData($settings['favicon'] ?? null),
-            'seoImage' => $this->galleryImageData($settings['seo_image'] ?? null),
-            'mailPasswordConfigured' => $siteSettings->secretIsConfigured('mail_password'),
+            'logoUrl' => $this->publicAssetUrl($settings->get('logo')?->value),
+            'footerLogoUrl' => $this->publicAssetUrl($settings->get('footer_logo')?->value),
+            'faviconUrl' => $this->publicAssetUrl($settings->get('favicon')?->value),
+            'seoImageUrl' => $this->publicAssetUrl($settings->get('seo_image')?->value),
+            'logoImage' => $this->galleryImageData($settings->get('logo')?->value),
+            'footerLogoImage' => $this->galleryImageData($settings->get('footer_logo')?->value),
+            'faviconImage' => $this->galleryImageData($settings->get('favicon')?->value),
+            'seoImage' => $this->galleryImageData($settings->get('seo_image')?->value),
+            'mailPasswordConfigured' => ($settings->get('mail_password')?->value ?? '') !== '',
             'timezones' => \DateTimeZone::listIdentifiers(),
             ...$this->galleryPickerProps($request),
         ]);
     }
 
-    public function update(UpdateSiteSettingsRequest $request, SiteSettingsService $siteSettings): RedirectResponse
+    public function update(UpdateSiteSettingsRequest $request): RedirectResponse
     {
         $validated = $request->validated();
         $clearMailPassword = $request->boolean('mail_password_clear');
         $oldPaths = [];
 
-        DB::transaction(function () use ($validated, $siteSettings, $clearMailPassword, &$oldPaths): void {
+        DB::transaction(function () use ($validated, $clearMailPassword, &$oldPaths): void {
             foreach (self::SETTING_KEYS as $key) {
-                if (in_array($key, ['logo', 'favicon', 'seo_image'], true)) {
+                if (in_array($key, ['logo', 'footer_logo', 'favicon', 'seo_image'], true)) {
                     $selectedPath = $validated["{$key}_path"] ?? null;
 
                     if ($selectedPath === null) {
@@ -122,13 +129,13 @@ class SettingController extends Controller
             }
 
             if ($clearMailPassword) {
-                $siteSettings->delete('mail_password');
+                Setting::query()->where('key', 'mail_password')->delete();
             } elseif (($validated['mail_password'] ?? '') !== '') {
-                $siteSettings->saveSecret('mail_password', $validated['mail_password']);
+                $this->saveSetting('mail_password', Crypt::encryptString($validated['mail_password']));
             }
         });
 
-        $siteSettings->forgetCachedValues();
+        Cache::forget('site_settings.values');
 
         foreach ($oldPaths as $oldPath) {
             if (! $this->isManagedAssetPath($oldPath)) {
@@ -136,7 +143,7 @@ class SettingController extends Controller
             }
 
             if (Setting::query()
-                ->whereIn('key', ['logo', 'favicon', 'seo_image'])
+                ->whereIn('key', ['logo', 'footer_logo', 'favicon', 'seo_image'])
                 ->where('value', $oldPath)
                 ->exists()) {
                 continue;
@@ -152,19 +159,52 @@ class SettingController extends Controller
         return to_route('admin.setting.index')->with('success', 'Site settings updated successfully.');
     }
 
-    public function testMail(Request $request, SiteSettingsService $siteSettings): RedirectResponse
+    public function testMail(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'email' => ['required', 'email', 'max:255'],
         ]);
 
-        if (($siteSettings->values()['mail_mailer'] ?? null) !== 'smtp') {
+        $settings = Setting::query()
+            ->whereIn('key', [
+                'mail_mailer',
+                'mail_host',
+                'mail_port',
+                'mail_encryption',
+                'mail_username',
+                'mail_password',
+                'mail_from_name',
+                'mail_from_address',
+            ])
+            ->pluck('value', 'key');
+
+        if ($settings->get('mail_mailer') !== 'smtp') {
             return back()->withErrors([
                 'mail_test' => 'Select and save the SMTP mail driver before testing delivery.',
             ]);
         }
 
-        $siteSettings->applyMailConfiguration();
+        $encryptedPassword = $settings->get('mail_password');
+
+        config([
+            'mail.default' => 'smtp',
+            'mail.from.address' => $settings->get('mail_from_address') ?: config('mail.from.address'),
+            'mail.from.name' => $settings->get('mail_from_name') ?: config('mail.from.name'),
+            'mail.mailers.smtp.transport' => 'smtp',
+            'mail.mailers.smtp.url' => null,
+            'mail.mailers.smtp.scheme' => match ($settings->get('mail_encryption', 'tls')) {
+                'ssl' => 'smtps',
+                'none' => null,
+                default => 'smtp',
+            },
+            'mail.mailers.smtp.host' => $settings->get('mail_host', ''),
+            'mail.mailers.smtp.port' => (int) ($settings->get('mail_port') ?: 587),
+            'mail.mailers.smtp.username' => $settings->get('mail_username') ?: null,
+            'mail.mailers.smtp.password' => is_string($encryptedPassword) && $encryptedPassword !== ''
+                ? Crypt::decryptString($encryptedPassword)
+                : null,
+        ]);
+        Mail::purge('smtp');
 
         try {
             Mail::raw('This is a test email from your CMS mail settings.', function ($message) use ($validated): void {

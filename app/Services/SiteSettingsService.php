@@ -54,6 +54,7 @@ class SiteSettingsService
             'currency_code',
             'posts_per_page',
             'logo',
+            'footer_logo',
             'favicon',
             'timezone',
             'locale',
@@ -74,32 +75,13 @@ class SiteSettingsService
             'footer_text',
         ]));
 
-        foreach (['logo', 'favicon', 'seo_image'] as $key) {
+        foreach (['logo', 'footer_logo', 'favicon', 'seo_image'] as $key) {
             if (! empty($publicValues[$key])) {
                 $publicValues["{$key}_url"] = Storage::disk('public')->url($publicValues[$key]);
             }
         }
 
         return $publicValues;
-    }
-
-    public function save(string $key, string $value): void
-    {
-        $setting = Setting::query()->firstOrNew(['key' => $key]);
-        $setting->value = $value;
-        $setting->save();
-        $this->forgetCachedValues();
-    }
-
-    public function delete(string $key): void
-    {
-        Setting::query()->where('key', $key)->delete();
-        $this->forgetCachedValues();
-    }
-
-    public function saveSecret(string $key, string $value): void
-    {
-        $this->save($key, Crypt::encryptString($value));
     }
 
     public function secretIsConfigured(string $key): bool
@@ -168,10 +150,5 @@ class SiteSettingsService
         }
 
         Mail::purge($mailer);
-    }
-
-    public function forgetCachedValues(): void
-    {
-        Cache::forget(self::CACHE_KEY);
     }
 }

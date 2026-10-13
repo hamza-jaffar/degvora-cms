@@ -34,6 +34,14 @@ class UpdateSiteSettingsRequest extends FormRequest
                     ->where('disk', 'public')
                     ->where(fn (Builder $query) => $query->where('mime_type', 'like', 'image/%')),
             ],
+            'footer_logo_path' => [
+                'nullable',
+                'string',
+                'max:2048',
+                Rule::exists('galleries', 'path')
+                    ->where('disk', 'public')
+                    ->where(fn (Builder $query) => $query->where('mime_type', 'like', 'image/%')),
+            ],
             'favicon_path' => [
                 'nullable',
                 'string',

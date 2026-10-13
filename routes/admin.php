@@ -20,6 +20,7 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
         Route::get('create', [UserManagementController::class, 'create'])->name('create');
     });
 
+    // Gallery — always enabled (required)
     Route::prefix('/gallery')->name('admin.gallery.')->group(function () {
         Route::get('/', [GalleryController::class, 'index'])->name('index');
         Route::post('/upload', [GalleryController::class, 'upload'])->name('upload');
@@ -27,20 +28,25 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
         Route::delete('/{gallery}', [GalleryController::class, 'destroy'])->name('destroy');
     });
 
-    Route::prefix('category')->name('admin.category.')->group(function () {
+    // Category — optional feature
+    Route::prefix('category')->name('admin.category.')->middleware('feature:category')->group(function () {
         Route::get('/index', [CategoryController::class, 'index'])->name('index');
         Route::get('/create', [CategoryController::class, 'create'])->name('create');
         Route::post('/store', [CategoryController::class, 'store'])->name('store');
         Route::get('/edit/{category:slug}', [CategoryController::class, 'edit'])->name('edit');
         Route::post('/update', [CategoryController::class, 'update'])->name('update');
         Route::delete('/delete', [CategoryController::class, 'delete'])->name('delete');
-
     });
 
-    Route::resource('products', ProductController::class)->names('admin.products');
-    Route::post('products/{product}/restore', [ProductController::class, 'restore'])->name('admin.products.restore')->withTrashed();
-    Route::delete('products/{product}/force-delete', [ProductController::class, 'forceDelete'])->name('admin.products.force-delete')->withTrashed();
+    // Products — optional feature
+    Route::middleware('feature:product')->group(function () {
+        Route::resource('products', ProductController::class)->names('admin.products');
+        Route::post('products/{product}/duplicate', [ProductController::class, 'duplicate'])->name('admin.products.duplicate');
+        Route::post('products/{product}/restore', [ProductController::class, 'restore'])->name('admin.products.restore')->withTrashed();
+        Route::delete('products/{product}/force-delete', [ProductController::class, 'forceDelete'])->name('admin.products.force-delete')->withTrashed();
+    });
 
+    // Pages — always enabled (required)
     Route::resource('page', PageController::class)->names('admin.page');
     Route::post('page/{page}/restore', [PageController::class, 'restore'])->name('admin.page.restore')->withTrashed();
     Route::delete('page/{page}/force-delete', [PageController::class, 'forceDelete'])->name('admin.page.force-delete')->withTrashed();
@@ -51,7 +57,8 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:3,1')
         ->name('admin.setting.mail-test');
 
-    Route::prefix('themes')->name('admin.themes.')->group(function () {
+    // Themes — optional feature
+    Route::prefix('themes')->name('admin.themes.')->middleware('feature:theme')->group(function () {
         Route::get('/', [ThemeController::class, 'index'])->name('index');
         Route::post('/upload', [ThemeController::class, 'upload'])->name('upload');
         Route::post('/active', [ThemeController::class, 'setActive'])->name('active');
@@ -64,6 +71,7 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
         Route::delete('/{theme}', [ThemeController::class, 'destroy'])->name('destroy');
     });
 
+    // Menus — always enabled (required)
     Route::resource('menus', MenuController::class)
         ->except('show')
         ->names('admin.menus');

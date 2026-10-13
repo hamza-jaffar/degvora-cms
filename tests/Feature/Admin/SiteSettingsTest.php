@@ -5,6 +5,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\SiteSettingsService;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -31,6 +32,7 @@ it('renders saved site settings and gallery image picker data', function () {
     Setting::query()->create(['key' => 'email', 'value' => 'hello@example.test']);
     Setting::query()->create(['key' => 'country', 'value' => 'US']);
     Setting::query()->create(['key' => 'logo', 'value' => $logo->path]);
+    Setting::query()->create(['key' => 'footer_logo', 'value' => $logo->path]);
     Setting::query()->create([
         'key' => 'mail_password',
         'value' => Crypt::encryptString('private-password'),
@@ -48,6 +50,8 @@ it('renders saved site settings and gallery image picker data', function () {
             ->missing('settings.mail_password')
             ->where('logoUrl', Storage::disk('public')->url($logo->path))
             ->where('logoImage.path', $logo->path)
+            ->where('footerLogoUrl', Storage::disk('public')->url($logo->path))
+            ->where('footerLogoImage.path', $logo->path)
             ->where('filterUrl', route('admin.setting.index'))
             ->has('media.data', 1)
             ->where('counts.image', 1)
@@ -106,7 +110,7 @@ it('refreshes cached settings after the admin updates them', function () {
     $user = User::factory()->create();
     Setting::query()->create(['key' => 'name', 'value' => 'Old site name']);
     $siteSettings = app(SiteSettingsService::class);
-    $siteSettings->forgetCachedValues();
+    Cache::forget('site_settings.values');
 
     expect($siteSettings->values()['name'])->toBe('Old site name');
 
@@ -143,6 +147,17 @@ it('updates site details and saves selected gallery image paths', function () {
         'width' => '1',
         'height' => '1',
     ]);
+    $footerLogo = Gallery::query()->create([
+        'disk' => 'public',
+        'filename' => 'footer-logo.png',
+        'original_name' => 'footer-logo.png',
+        'path' => 'gallery/footer-logo.png',
+        'mime_type' => 'image/png',
+        'alt' => 'Footer logo',
+        'size' => '4',
+        'width' => '1',
+        'height' => '1',
+    ]);
 
     $this->actingAs($user)
         ->post(route('admin.setting.update'), siteSettingsPayload([
@@ -154,6 +169,7 @@ it('updates site details and saves selected gallery image paths', function () {
             'currency' => 'US Dollar',
             'currency_code' => 'usd',
             'logo_path' => $logo->path,
+            'footer_logo_path' => $footerLogo->path,
             'favicon_path' => $favicon->path,
             'mail_mailer' => 'smtp',
             'mail_host' => 'smtp.example.test',
@@ -174,6 +190,7 @@ it('updates site details and saves selected gallery image paths', function () {
         ->and(Setting::query()->where('key', 'currency')->value('value'))->toBe('US Dollar')
         ->and(Setting::query()->where('key', 'currency_code')->value('value'))->toBe('USD')
         ->and(Setting::query()->where('key', 'logo')->value('value'))->toBe($logo->path)
+        ->and(Setting::query()->where('key', 'footer_logo')->value('value'))->toBe($footerLogo->path)
         ->and(Setting::query()->where('key', 'favicon')->value('value'))->toBe($favicon->path)
         ->and(Setting::query()->where('key', 'mail_password')->value('value'))->not->toBe('private-password');
 
@@ -259,6 +276,7 @@ it('rejects invalid email, currency codes, country values, and non-gallery image
             'currency_code' => 'US dollars',
             'country' => 'USA',
             'logo_path' => 'gallery/clip.mp4',
+            'footer_logo_path' => 'gallery/clip.mp4',
             'google_analytics_id' => 'not-a-valid-id',
             'social_facebook' => 'javascript:alert(1)',
         ]))
@@ -268,6 +286,7 @@ it('rejects invalid email, currency codes, country values, and non-gallery image
             'currency_code',
             'country',
             'logo_path',
+            'footer_logo_path',
             'google_analytics_id',
             'social_facebook',
         ]);
@@ -355,6 +374,7 @@ function siteSettingsPayload(array $overrides = []): array
         'social_linkedin' => '',
         'social_tiktok' => '',
         'footer_text' => '',
+        'footer_logo_path' => null,
         'google_analytics_id' => '',
         'google_tag_manager_id' => '',
         'meta_pixel_id' => '',

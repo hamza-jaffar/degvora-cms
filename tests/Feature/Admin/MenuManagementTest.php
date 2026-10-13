@@ -6,6 +6,7 @@ use App\Models\Page;
 use App\Models\Products;
 use App\Models\User;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -44,6 +45,35 @@ it('lists menus with item counts and loads the item collection in one query', fu
             ->has('items', 12));
 
     expect($itemQueries)->toBe(1);
+});
+
+it('refreshes cached menu items after an item is updated', function () {
+    $user = User::factory()->create();
+    $menu = Menu::query()->create(['name' => 'Main menu']);
+    $item = $menu->menuItems()->create([
+        'label' => 'Old label',
+        'type' => 'custom',
+        'url' => '/old',
+        'sort_order' => 0,
+    ]);
+    Cache::forget("admin.menus.{$menu->id}.items");
+
+    $this->actingAs($user)
+        ->get(route('admin.menus.items.index', $menu))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('items.0.label', 'Old label'));
+
+    $this->actingAs($user)
+        ->put(route('admin.menus.items.update', [$menu, $item]), menuItemPayload([
+            'label' => 'Updated label',
+            'url' => '/updated',
+        ]))
+        ->assertRedirect(route('admin.menus.items.index', $menu));
+
+    $this->actingAs($user)
+        ->get(route('admin.menus.items.index', $menu))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('items.0.label', 'Updated label'));
 });
 
 it('creates a menu and redirects to its item manager', function () {

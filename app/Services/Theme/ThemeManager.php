@@ -68,6 +68,8 @@ class ThemeManager
             $view = 'theme::templates.page';
         }
 
+        $data['theme'] = app(ThemeContext::class);
+
         if (! View::exists($view)) {
             throw new RuntimeException(
                 'The active theme does not contain views/templates/page.blade.php.'

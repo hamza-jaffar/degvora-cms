@@ -1,9 +1,15 @@
 <?php
 
+use App\Models\Menu;
 use App\Models\Page;
 use App\Models\Setting;
+use App\Models\User;
+use App\Services\Theme\ThemeContext;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia as Assert;
 
 it('renders a published public page through the active theme', function () {
     $themeSlug = 'storefront-'.Str::lower(Str::random(12));
@@ -36,6 +42,52 @@ it('renders a published public page through the active theme', function () {
     } finally {
         File::deleteDirectory($themePath);
     }
+});
+
+it('provides active hierarchical menu items with resolved page links', function () {
+    $page = Page::query()->create([
+        'name' => 'About',
+        'slug' => 'about',
+        'path' => 'about',
+        'template' => 'template',
+        'status' => 'published',
+        'visibility' => 'public',
+        'content' => 'About page',
+    ]);
+    $menu = Menu::query()->create(['name' => 'Main Menu']);
+    $menu->menuItems()->create([
+        'label' => 'Second item',
+        'sort_order' => 1,
+        'is_active' => true,
+    ]);
+    $firstItem = $menu->menuItems()->create([
+        'label' => 'First item',
+        'sort_order' => 0,
+        'is_active' => true,
+    ]);
+    $menu->menuItems()->create([
+        'parent_id' => $firstItem->id,
+        'label' => 'About page',
+        'type' => 'page',
+        'reference_id' => $page->id,
+        'sort_order' => 0,
+        'is_active' => true,
+    ]);
+    $menu->menuItems()->create([
+        'label' => 'Inactive item',
+        'sort_order' => 2,
+        'is_active' => false,
+    ]);
+
+    $menuItems = app(ThemeContext::class)
+        ->menu()
+        ->get('Main Menu')
+        ?->menuItems;
+
+    expect($menuItems?->pluck('label')->all())
+        ->toBe(['First item', 'Second item'])
+        ->and($menuItems?->first()?->children->first()?->href)
+        ->toBe('/about');
 });
 
 it('renders the active theme page template when the page template is template', function () {
@@ -190,6 +242,122 @@ it('renders configured SEO metadata and analytics on default public pages', func
         ->assertSee('A default description for the website.')
         ->assertSee('G-ABC12345')
         ->assertSee('verify-token-123');
+});
+
+it('renders the configured footer logo on default public pages', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('gallery/footer-logo.png', 'logo');
+
+    Setting::query()->create([
+        'key' => 'footer_logo',
+        'value' => 'gallery/footer-logo.png',
+    ]);
+    Setting::query()->create([
+        'key' => 'name',
+        'value' => 'Footer logo site',
+    ]);
+    Page::query()->create([
+        'name' => 'About',
+        'slug' => 'about-footer-logo',
+        'path' => 'about-footer-logo',
+        'template' => 'page',
+        'status' => 'published',
+        'visibility' => 'public',
+        'content' => 'About page',
+    ]);
+
+    $this->get('/about-footer-logo')
+        ->assertOk()
+        ->assertSee('<footer>', false)
+        ->assertSee('src="'.Storage::disk('public')->url('gallery/footer-logo.png').'"', false)
+        ->assertSee('alt="Footer logo site"', false);
+});
+
+it('renders the configured footer logo in the active storefront theme', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('gallery/footer-logo.png', 'logo');
+
+    Setting::query()->create([
+        'key' => 'active_theme',
+        'value' => 'store-front',
+    ]);
+    Setting::query()->create([
+        'key' => 'footer_logo',
+        'value' => 'gallery/footer-logo.png',
+    ]);
+    Setting::query()->create([
+        'key' => 'name',
+        'value' => 'Footer logo site',
+    ]);
+    Page::query()->create([
+        'name' => 'About',
+        'slug' => 'about-themed-footer-logo',
+        'path' => 'about-themed-footer-logo',
+        'template' => 'template',
+        'status' => 'published',
+        'visibility' => 'public',
+        'content' => 'About page',
+    ]);
+
+    $this->get('/about-themed-footer-logo')
+        ->assertOk()
+        ->assertSee('<img class="logo" src="'.Storage::disk('public')->url('gallery/footer-logo.png').'" width="200"', false)
+        ->assertSee('alt="Footer logo site"', false)
+        ->assertDontSee('<svg class="logo"', false);
+});
+
+it('refreshes cached public page content after an admin update', function () {
+    $user = User::factory()->create();
+    $page = Page::query()->create([
+        'name' => 'Cached page',
+        'slug' => 'cached-page',
+        'path' => '/cached-page',
+        'template' => 'page',
+        'status' => 'published',
+        'visibility' => 'public',
+        'content' => 'Original cached content',
+    ]);
+    $menu = Menu::query()->create(['name' => 'Main menu']);
+    Cache::forget('storefront.pages.slug.v2.cached-page');
+    Cache::put('storefront.pages.slug.cached-page', $page);
+
+    $this->get('/cached-page')
+        ->assertOk()
+        ->assertSee('Original cached content');
+
+    expect(Cache::get('storefront.pages.slug.v2.cached-page'))->toBeArray();
+    expect(Cache::get('storefront.pages.slug.cached-page'))->toBeNull();
+
+    $this->actingAs($user)
+        ->put(route('admin.page.update', $page), [
+            'name' => 'Cached page',
+            'slug' => 'cached-page',
+            'excerpt' => '',
+            'content' => 'Updated cached content',
+            'parent_id' => null,
+            'meta_title' => '',
+            'meta_description' => '',
+            'canonical_url' => null,
+            'robots' => 'index,follow',
+            'status' => 'published',
+            'visibility' => 'public',
+            'password' => '',
+            'published_at' => null,
+            'template' => 'page',
+            'sort_order' => 0,
+            'featured_media' => null,
+        ])
+        ->assertRedirect(route('admin.page.index'));
+
+    $this->get('/cached-page')
+        ->assertOk()
+        ->assertSee('Updated cached content')
+        ->assertDontSee('Original cached content');
+
+    $this->actingAs($user)
+        ->get(route('admin.menus.items.index', $menu))
+        ->assertInertia(fn (Assert $response) => $response
+            ->where('pages.0.name', 'Cached page'));
 });
 
 it('makes safe site settings available to active theme templates', function () {

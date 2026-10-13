@@ -78,3 +78,26 @@ export type PageFormPageProps = {
     filter: 'all' | 'image' | 'video' | 'other';
     search: string;
 };
+
+export type ShopFilters = {
+    search: string;
+    category_id: string;
+    vendor: string;
+    brand: string;
+    in_stock: string;
+    min_price: string;
+    max_price: string;
+    sort: string;
+    direction: string;
+    per_page: number;
+};
+
+export type ShopIndexPageProps = {
+    products: ProductIndexPagination;
+    filters: ShopFilters;
+    categories: Pick<Category, 'id' | 'name' | 'slug'>[];
+    vendors: string[];
+    brands: string[];
+    priceRange: { min: number; max: number };
+};
+

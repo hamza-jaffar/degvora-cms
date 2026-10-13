@@ -44,8 +44,15 @@
         <div>
             {!! $page->content !!}
         </div>
-        @if(!empty($siteSettings['footer_text']))
-            <footer>{{ $siteSettings['footer_text'] }}</footer>
+        @if(!empty($siteSettings['footer_logo_url']) || !empty($siteSettings['footer_text']))
+            <footer>
+                @if(!empty($siteSettings['footer_logo_url']))
+                    <img src="{{ $siteSettings['footer_logo_url'] }}" alt="{{ $siteSettings['name'] ?? config('app.name') }}">
+                @endif
+                @if(!empty($siteSettings['footer_text']))
+                    <p>{{ $siteSettings['footer_text'] }}</p>
+                @endif
+            </footer>
         @endif
         @include('components.site-body-integrations')
     </body>

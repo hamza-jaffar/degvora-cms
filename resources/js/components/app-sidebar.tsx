@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpen,
     FileText,
@@ -33,7 +33,7 @@ import pages from '@/routes/admin/page';
 import themes from '@/routes/admin/themes';
 import menus from '@/routes/admin/menus';
 
-const mainNavItems: NavItem[] = [
+const allNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
@@ -53,11 +53,13 @@ const mainNavItems: NavItem[] = [
         title: 'Category',
         href: category.index(),
         icon: Tags,
+        feature: 'category',
     },
     {
         title: 'Products',
         href: products.index(),
         icon: Package,
+        feature: 'product',
     },
     {
         title: 'Gallery',
@@ -68,6 +70,7 @@ const mainNavItems: NavItem[] = [
         title: 'Themes',
         href: themes.index(),
         icon: Paintbrush,
+        feature: 'theme',
     },
 ];
 
@@ -85,6 +88,12 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const { cmsFeatures } = usePage().props;
+
+    const mainNavItems = allNavItems.filter(
+        (item) => !item.feature || cmsFeatures[item.feature] === true,
+    );
+
     return (
         <Sidebar collapsible="icon" variant="floating">
             <SidebarHeader>

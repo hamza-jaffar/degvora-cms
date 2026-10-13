@@ -10,6 +10,7 @@ use App\Models\Page;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -68,7 +69,8 @@ class PageController extends Controller
             ? ($data['published_at'] ?? now())
             : ($data['status'] === 'scheduled' ? $data['published_at'] : null);
 
-        Page::query()->create($data);
+        $page = Page::query()->create($data);
+        $this->forgetPageCaches($page->slug);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Page created successfully.')]);
 
@@ -87,12 +89,14 @@ class PageController extends Controller
 
     public function update(UpdatePageRequest $request, Page $page): RedirectResponse
     {
+        $previousSlug = $page->slug;
         $data = $request->pageData();
         $data['published_at'] = $data['status'] === 'published'
             ? ($data['published_at'] ?? $page->published_at ?? now())
             : ($data['status'] === 'scheduled' ? $data['published_at'] : null);
 
         $page->update($data);
+        $this->forgetPageCaches($previousSlug, $page->slug);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Page updated successfully.')]);
 
@@ -101,7 +105,9 @@ class PageController extends Controller
 
     public function destroy(Page $page): RedirectResponse
     {
+        $slug = $page->slug;
         $page->delete();
+        $this->forgetPageCaches($slug);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Page moved to trash successfully.')]);
 
@@ -112,6 +118,7 @@ class PageController extends Controller
     {
         $model = Page::withTrashed()->findOrFail($page);
         $model->restore();
+        $this->forgetPageCaches($model->slug);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Page restored successfully.')]);
 
@@ -122,6 +129,7 @@ class PageController extends Controller
     {
         $model = Page::withTrashed()->findOrFail($page);
         $model->forceDelete();
+        $this->forgetPageCaches($model->slug);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Page permanently deleted.')]);
 
@@ -243,5 +251,16 @@ class PageController extends Controller
             'type' => str_starts_with($asset->mime_type, 'image/') ? 'image' : (str_starts_with($asset->mime_type, 'video/') ? 'video' : 'other'),
             'mimeType' => $asset->mime_type,
         ];
+    }
+
+    private function forgetPageCaches(string ...$slugs): void
+    {
+        foreach (array_unique($slugs) as $slug) {
+            Cache::forget("storefront.pages.slug.{$slug}");
+            Cache::forget("storefront.pages.slug.v2.{$slug}");
+        }
+
+        Cache::forget('admin.menu_items.pages');
+        Cache::forget('admin.menu_items.pages.v2');
     }
 }

@@ -107,9 +107,11 @@ interface PageProps {
         mail_from_address: string;
     };
     logoUrl: string | null;
+    footerLogoUrl: string | null;
     faviconUrl: string | null;
     seoImageUrl: string | null;
     logoImage: GalleryImage | null;
+    footerLogoImage: GalleryImage | null;
     faviconImage: GalleryImage | null;
     seoImage: GalleryImage | null;
     mailPasswordConfigured: boolean;
@@ -189,7 +191,11 @@ const settingsSections = [
             "google_site_verification",
         ],
     },
-    { id: "footer", label: "Footer", fields: ["footer_text"] },
+    {
+        id: "footer",
+        label: "Footer",
+        fields: ["footer_logo_path", "footer_text"],
+    },
 ] as const;
 
 type SettingsSection = (typeof settingsSections)[number]["id"];
@@ -467,9 +473,11 @@ export default function SiteSettings({
     activeTab,
     settings,
     logoUrl,
+    footerLogoUrl,
     faviconUrl,
     seoImageUrl,
     logoImage,
+    footerLogoImage,
     faviconImage,
     seoImage,
     mailPasswordConfigured,
@@ -483,6 +491,8 @@ export default function SiteSettings({
     const [selectedLogo, setSelectedLogo] = useState<GalleryImage | null>(
         logoImage,
     );
+    const [selectedFooterLogo, setSelectedFooterLogo] =
+        useState<GalleryImage | null>(footerLogoImage);
     const [selectedFavicon, setSelectedFavicon] = useState<GalleryImage | null>(
         faviconImage,
     );
@@ -545,6 +555,7 @@ export default function SiteSettings({
         mail_from_name: string;
         mail_from_address: string;
         logo_path: string | null;
+        footer_logo_path: string | null;
         favicon_path: string | null;
     }>({
         ...settings,
@@ -555,6 +566,7 @@ export default function SiteSettings({
         mail_password_clear: false,
         seo_image_path: null,
         logo_path: null,
+        footer_logo_path: null,
         favicon_path: null,
     });
 
@@ -635,6 +647,7 @@ export default function SiteSettings({
                 toast.success("Site settings updated successfully.");
                 reset(
                     "logo_path",
+                    "footer_logo_path",
                     "favicon_path",
                     "seo_image_path",
                     "mail_password",
@@ -1559,11 +1572,28 @@ export default function SiteSettings({
                     <CardHeader>
                         <CardTitle>Footer</CardTitle>
                         <CardDescription>
-                            Add a short copyright or legal line for the default
-                            public page template.
+                            Choose a footer logo and add a short copyright or
+                            legal line.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-2">
+                    <CardContent className="space-y-6">
+                        <ImageSetting
+                            id="footer-logo"
+                            label="Footer logo"
+                            description="Choose an image from the existing media library."
+                            currentUrl={footerLogoUrl}
+                            selectedImage={selectedFooterLogo}
+                            error={errors.footer_logo_path}
+                            media={media}
+                            counts={counts}
+                            filter={filter}
+                            search={search}
+                            filterUrl={filterUrl}
+                            onSelect={(image) => {
+                                setSelectedFooterLogo(image);
+                                setData("footer_logo_path", image.path);
+                            }}
+                        />
                         <Label htmlFor="footer_text">Footer text</Label>
                         <Input
                             id="footer_text"
