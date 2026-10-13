@@ -385,8 +385,57 @@ function siteSettingsPayload(array $overrides = []): array
         'mail_encryption' => 'tls',
         'mail_username' => '',
         'mail_password' => '',
-        'mail_password_clear' => false,
         'mail_from_name' => '',
         'mail_from_address' => '',
+        'shipping_enabled' => '1',
+        'shipping_rate_type' => 'flat',
+        'shipping_flat_rate' => '150.00',
+        'shipping_free_threshold' => '2500.00',
+        'shipping_origin_country' => 'PK',
+        'shipping_origin_city' => 'Lahore',
+        'shipping_origin_address' => 'Warehouse 1',
+        'shipping_origin_postal_code' => '54000',
+        'shipping_estimated_delivery' => '2-4 business days',
+        'shipping_policy' => 'Fast delivery nationwide.',
+        'product_variations' => json_encode([
+            ['name' => 'Color', 'values' => ['Black', 'White', 'Blue']],
+            ['name' => 'Size', 'values' => ['M', 'L', 'XL']],
+        ]),
     ], $overrides);
 }
+
+it('updates and persists shipping and product variation settings', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('admin.setting.update'), siteSettingsPayload([
+            'shipping_enabled' => '1',
+            'shipping_rate_type' => 'flat',
+            'shipping_flat_rate' => '200.00',
+            'shipping_free_threshold' => '3000.00',
+            'shipping_origin_country' => 'US',
+            'shipping_origin_city' => 'New York',
+            'shipping_origin_address' => '123 Broadway',
+            'shipping_origin_postal_code' => '10001',
+            'shipping_estimated_delivery' => '3-5 days',
+            'shipping_policy' => 'Ships via FedEx.',
+            'product_variations' => json_encode([
+                ['name' => 'Material', 'values' => ['Cotton', 'Wool']],
+            ]),
+        ]))
+        ->assertRedirect(route('admin.setting.index'));
+
+    expect(Setting::query()->where('key', 'shipping_flat_rate')->value('value'))->toBe('200.00');
+    expect(Setting::query()->where('key', 'shipping_origin_city')->value('value'))->toBe('New York');
+    expect(Setting::query()->where('key', 'product_variations')->value('value'))->toBe(json_encode([
+        ['name' => 'Material', 'values' => ['Cotton', 'Wool']],
+    ]));
+
+    $this->actingAs($user)
+        ->get(route('admin.products.create'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/product/create')
+            ->where('presetVariations', [
+                ['name' => 'Material', 'values' => ['Cotton', 'Wool']],
+            ]));
+});

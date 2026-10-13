@@ -41,6 +41,7 @@ const ProductForm = ({
     search,
     filterUrl,
     cancelHref,
+    presetVariations,
 }: ProductFormProps) => {
     const [mainImage, setMainImage] = useState<GalleryImage | null>(
         product?.main_image_asset ?? null,
@@ -334,6 +335,7 @@ const ProductForm = ({
                             <ProductVariantEditor
                                 product={product}
                                 errors={errors}
+                                presetVariations={presetVariations}
                             />
 
                             <section className="space-y-4 rounded-lg border bg-background p-4">

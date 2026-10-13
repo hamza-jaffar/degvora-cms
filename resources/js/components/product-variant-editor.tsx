@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import InputError from "@/components/input-error";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Product, ProductVariantItem } from "@/types/data";
+import type { Product, ProductVariantItem, ProductVariantOption } from "@/types/data";
 import { Check, Minus, Plus, Sparkles, X } from "lucide-react";
 import React, { useState, useMemo, useCallback, memo } from "react";
 
@@ -207,9 +207,11 @@ const GroupPriceRow = memo(function GroupPriceRow({
 export function ProductVariantEditor({
     product,
     errors,
+    presetVariations = [],
 }: {
     product: Product | null;
     errors: Record<string, string | undefined>;
+    presetVariations?: ProductVariantOption[];
 }) {
     const savedVariants =
         product?.variants?.pricing_mode === "variants"
@@ -826,111 +828,255 @@ export function ProductVariantEditor({
                     </div>
 
                     <div className="space-y-4">
-                        {options.map((option, index) => (
-                            <div
-                                key={option.id}
-                                className="grid gap-3 rounded-md border p-4 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)_auto] sm:items-end"
-                            >
-                                <Field label={`Option ${index + 1}`}>
-                                    <Input
-                                        value={option.name}
-                                        maxLength={40}
-                                        placeholder="Color"
-                                        onChange={(event) =>
-                                            updateOption(option.id, {
-                                                name: event.target.value,
-                                            })
-                                        }
-                                    />
-                                    <HelpText>
-                                        Name this choice, e.g. Size or Color.
-                                    </HelpText>
-                                </Field>
-                                <Field label="Values">
-                                    <div className="flex min-h-9 flex-wrap gap-1.5">
-                                        {option.values.map((value) => (
-                                            <span
-                                                key={value}
-                                                className="inline-flex items-center gap-1 rounded-md border bg-muted/40 py-1 pr-1 pl-2 text-xs font-medium"
-                                            >
-                                                {value}
-                                                <button
-                                                    type="button"
-                                                    className="inline-flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-background hover:text-foreground"
-                                                    aria-label={`Remove ${value} from ${option.name || "option"}`}
-                                                    onClick={() =>
-                                                        updateOption(
-                                                            option.id,
+                        {presetVariations.length > 0 && (
+                            <div className="rounded-lg border border-dashed bg-muted/30 p-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium text-foreground">
+                                        Predefined variations:
+                                    </span>
+                                    <span className="text-[11px] text-muted-foreground">
+                                        Click to quick-add
+                                    </span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {presetVariations.map((preset) => {
+                                        const existingOption = options.find(
+                                            (opt) =>
+                                                opt.name.trim().toLowerCase() ===
+                                                preset.name.trim().toLowerCase(),
+                                        );
+                                        return (
+                                            <Button
+                                                key={preset.name}
+                                                type="button"
+                                                variant={
+                                                    existingOption
+                                                        ? "secondary"
+                                                        : "outline"
+                                                }
+                                                size="sm"
+                                                className="h-7 text-xs gap-1.5"
+                                                onClick={() => {
+                                                    if (existingOption) {
+                                                        setOptions((current) =>
+                                                            current.map((opt) => {
+                                                                if (
+                                                                    opt.id ===
+                                                                    existingOption.id
+                                                                ) {
+                                                                    const combined =
+                                                                        Array.from(
+                                                                            new Set([
+                                                                                ...opt.values,
+                                                                                ...preset.values,
+                                                                            ]),
+                                                                        );
+                                                                    return {
+                                                                        ...opt,
+                                                                        values: combined,
+                                                                    };
+                                                                }
+                                                                return opt;
+                                                            }),
+                                                        );
+                                                    } else {
+                                                        setOptions((current) => [
+                                                            ...current,
                                                             {
-                                                                values: option.values.filter(
-                                                                    (item) =>
-                                                                        item !==
-                                                                        value,
-                                                                ),
+                                                                id:
+                                                                    Math.max(
+                                                                        0,
+                                                                        ...current.map(
+                                                                            (
+                                                                                item,
+                                                                            ) =>
+                                                                                item.id,
+                                                                        ),
+                                                                    ) + 1,
+                                                                name: preset.name,
+                                                                values: [
+                                                                    ...preset.values,
+                                                                ],
+                                                                draftValue: "",
                                                             },
-                                                        )
+                                                        ]);
                                                     }
-                                                >
-                                                    <X className="size-3" />
-                                                </button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                    <div className="flex gap-2">
+                                                }}
+                                            >
+                                                <Plus className="size-3" />
+                                                <span>{preset.name}</span>
+                                                <span className="rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground">
+                                                    {preset.values.length}
+                                                </span>
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {options.map((option, index) => {
+                            const matchingPreset = presetVariations.find(
+                                (preset) =>
+                                    preset.name.trim().toLowerCase() ===
+                                    option.name.trim().toLowerCase(),
+                            );
+                            const unselectedPresetValues = matchingPreset
+                                ? matchingPreset.values.filter(
+                                      (v) =>
+                                          !option.values.some(
+                                              (val) =>
+                                                  val.toLowerCase() ===
+                                                  v.toLowerCase(),
+                                          ),
+                                  )
+                                : [];
+
+                            return (
+                                <div
+                                    key={option.id}
+                                    className="grid gap-3 rounded-md border p-4 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)_auto] sm:items-end"
+                                >
+                                    <Field label={`Option ${index + 1}`}>
                                         <Input
-                                            value={option.draftValue}
-                                            maxLength={100}
-                                            placeholder="Type a value and press Enter"
+                                            value={option.name}
+                                            maxLength={40}
+                                            placeholder="Color"
                                             onChange={(event) =>
                                                 updateOption(option.id, {
-                                                    draftValue:
-                                                        event.target.value,
+                                                    name: event.target.value,
                                                 })
                                             }
-                                            onKeyDown={(event) => {
-                                                if (event.key === "Enter") {
-                                                    event.preventDefault();
-                                                    addOptionValue(option.id);
-                                                }
-                                            }}
                                         />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="icon"
-                                            aria-label={`Add value to ${option.name || "option"}`}
-                                            title="Add value"
-                                            disabled={!option.draftValue.trim()}
-                                            onClick={() =>
-                                                addOptionValue(option.id)
-                                            }
-                                        >
-                                            <Check />
-                                        </Button>
-                                    </div>
-                                    <HelpText>
-                                        Values become variants only after
-                                        confirmation.
-                                    </HelpText>
-                                </Field>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={`Remove option ${index + 1}`}
-                                    title="Remove option"
-                                    onClick={() =>
-                                        setOptions((current) =>
-                                            current.filter(
-                                                (item) => item.id !== option.id,
-                                            ),
-                                        )
-                                    }
-                                >
-                                    <Minus />
-                                </Button>
-                            </div>
-                        ))}
+                                        <HelpText>
+                                            Name this choice, e.g. Size or Color.
+                                        </HelpText>
+                                    </Field>
+                                    <Field label="Values">
+                                        <div className="flex min-h-9 flex-wrap gap-1.5">
+                                            {option.values.map((value) => (
+                                                <span
+                                                    key={value}
+                                                    className="inline-flex items-center gap-1 rounded-md border bg-muted/40 py-1 pr-1 pl-2 text-xs font-medium"
+                                                >
+                                                    {value}
+                                                    <button
+                                                        type="button"
+                                                        className="inline-flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-background hover:text-foreground"
+                                                        aria-label={`Remove ${value} from ${option.name || "option"}`}
+                                                        onClick={() =>
+                                                            updateOption(
+                                                                option.id,
+                                                                {
+                                                                    values: option.values.filter(
+                                                                        (item) =>
+                                                                            item !==
+                                                                            value,
+                                                                    ),
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        <X className="size-3" />
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={option.draftValue}
+                                                maxLength={100}
+                                                placeholder="Type a value and press Enter"
+                                                onChange={(event) =>
+                                                    updateOption(option.id, {
+                                                        draftValue:
+                                                            event.target.value,
+                                                    })
+                                                }
+                                                onKeyDown={(event) => {
+                                                    if (event.key === "Enter") {
+                                                        event.preventDefault();
+                                                        addOptionValue(option.id);
+                                                    }
+                                                }}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                aria-label={`Add value to ${option.name || "option"}`}
+                                                title="Add value"
+                                                disabled={!option.draftValue.trim()}
+                                                onClick={() =>
+                                                    addOptionValue(option.id)
+                                                }
+                                            >
+                                                <Check />
+                                            </Button>
+                                        </div>
+                                        {unselectedPresetValues.length > 0 && (
+                                            <div className="flex flex-wrap items-center gap-1 pt-1">
+                                                <span className="text-[11px] text-muted-foreground">
+                                                    Suggested {matchingPreset?.name}:
+                                                </span>
+                                                {unselectedPresetValues.map((val) => (
+                                                    <button
+                                                        key={val}
+                                                        type="button"
+                                                        className="inline-flex items-center gap-0.5 rounded border border-dashed px-1.5 py-0.5 text-[11px] text-muted-foreground hover:border-primary hover:text-foreground"
+                                                        onClick={() => {
+                                                            updateOption(option.id, {
+                                                                values: [
+                                                                    ...option.values,
+                                                                    val,
+                                                                ],
+                                                            });
+                                                        }}
+                                                    >
+                                                        <Plus className="size-2.5" />
+                                                        {val}
+                                                    </button>
+                                                ))}
+                                                <button
+                                                    type="button"
+                                                    className="text-[11px] text-primary hover:underline ml-1"
+                                                    onClick={() => {
+                                                        updateOption(option.id, {
+                                                            values: [
+                                                                ...option.values,
+                                                                ...unselectedPresetValues,
+                                                            ],
+                                                        });
+                                                    }}
+                                                >
+                                                    Add all
+                                                </button>
+                                            </div>
+                                        )}
+                                        <HelpText>
+                                            Values become variants only after
+                                            confirmation.
+                                        </HelpText>
+                                    </Field>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label={`Remove option ${index + 1}`}
+                                        title="Remove option"
+                                        onClick={() =>
+                                            setOptions((current) =>
+                                                current.filter(
+                                                    (item) => item.id !== option.id,
+                                                ),
+                                            )
+                                        }
+                                    >
+                                        <Minus />
+                                    </Button>
+                                </div>
+                            );
+                        })}
                         <Button
                             type="button"
                             variant="outline"

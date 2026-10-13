@@ -34,6 +34,38 @@ export type Page = {
     deleted_at?: string | null;
 };
 
+export type Post = {
+    id: number;
+    title: string;
+    slug: string;
+    excerpt: string | null;
+    content: string | null;
+    featured_image: string | null;
+    featured_image_asset?: GalleryImage | null;
+    category_id: number | null;
+    category?: Pick<Category, 'id' | 'name' | 'slug'> | null;
+    author_id: number | null;
+    author?: { id: number; name: string; email: string } | null;
+    tags: string[] | null;
+    is_featured: boolean;
+    status: 'draft' | 'published' | 'scheduled' | 'archived';
+    visibility: 'public' | 'private' | 'password';
+    password: string | null;
+    published_at: string | null;
+    scheduled_at: string | null;
+    meta_title: string | null;
+    meta_description: string | null;
+    canonical_url: string | null;
+    og_title: string | null;
+    og_description: string | null;
+    og_image: string | null;
+    og_image_asset?: GalleryImage | null;
+    robots: string;
+    created_at: string;
+    updated_at: string;
+    deleted_at?: string | null;
+};
+
 export type Category = {
     id: number;
     parent_id: number | null;

@@ -33,3 +33,8 @@ export type ProductIndexPagination = RootStructure & {
 export type PageIndexPagination = RootStructure & {
     data: Page[];
 };
+
+export type PostIndexPagination = RootStructure & {
+    data: import('./data').Post[];
+};
+

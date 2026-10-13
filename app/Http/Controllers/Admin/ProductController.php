@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\UpdateProductRequest;
 use App\Models\Category;
 use App\Models\Gallery;
 use App\Models\Products;
+use App\Models\Setting;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -264,12 +265,28 @@ class ProductController extends Controller
             'other' => Gallery::query()->where('mime_type', 'not like', 'image/%')->where('mime_type', 'not like', 'video/%')->count(),
         ];
 
+        $rawVariations = Setting::query()->where('key', 'product_variations')->value('value');
+        $presetVariations = [];
+        if (is_string($rawVariations) && $rawVariations !== '') {
+            $decoded = json_decode($rawVariations, true);
+            if (is_array($decoded)) {
+                $presetVariations = $decoded;
+            }
+        }
+        if (empty($presetVariations)) {
+            $presetVariations = [
+                ['name' => 'Color', 'values' => ['Black', 'White', 'Red', 'Blue', 'Green']],
+                ['name' => 'Size', 'values' => ['S', 'M', 'L', 'XL', 'XXL']],
+            ];
+        }
+
         return [
             'media' => Inertia::scroll(fn () => $mediaQuery->latest()->paginate(24)->withQueryString()->through(fn (Gallery $asset): array => $this->serializeGalleryAsset($asset))),
             'counts' => $allCounts,
             'filter' => $filter,
             'search' => $search,
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
+            'presetVariations' => $presetVariations,
         ];
     }
 

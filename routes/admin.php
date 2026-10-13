@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\Admin\PageController;
+use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ThemeController;
@@ -50,6 +51,13 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
     Route::resource('page', PageController::class)->names('admin.page');
     Route::post('page/{page}/restore', [PageController::class, 'restore'])->name('admin.page.restore')->withTrashed();
     Route::delete('page/{page}/force-delete', [PageController::class, 'forceDelete'])->name('admin.page.force-delete')->withTrashed();
+
+    // Blog / Posts — optional feature
+    Route::middleware('feature:blog')->group(function () {
+        Route::resource('posts', PostController::class)->names('admin.posts');
+        Route::post('posts/{post}/restore', [PostController::class, 'restore'])->name('admin.posts.restore')->withTrashed();
+        Route::delete('posts/{post}/force-delete', [PostController::class, 'forceDelete'])->name('admin.posts.force-delete')->withTrashed();
+    });
 
     Route::get('/settings/site', [SettingController::class, 'index'])->name('admin.setting.index');
     Route::post('/setting/site/update', [SettingController::class, 'update'])->name('admin.setting.update');

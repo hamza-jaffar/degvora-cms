@@ -47,6 +47,7 @@ export type ProductFormPageProps = {
     counts: Record<'all' | 'image' | 'video' | 'other', number>;
     filter: 'all' | 'image' | 'video' | 'other';
     search: string;
+    presetVariations?: import('./data').ProductVariantOption[];
 };
 
 export type ProductShowPageProps = {
@@ -100,4 +101,34 @@ export type ShopIndexPageProps = {
     brands: string[];
     priceRange: { min: number; max: number };
 };
+
+import { Post } from './data';
+import { PostIndexPagination } from './paginations';
+
+export type PostFilters = {
+    search: string;
+    category_id: string;
+    status: string;
+    trashed: string;
+    is_featured: string;
+    sort: string;
+    direction: string;
+    per_page: number;
+};
+
+export type PostIndexPageProps = {
+    posts: PostIndexPagination;
+    filters: PostFilters;
+    categories: Pick<Category, 'id' | 'name' | 'slug'>[];
+};
+
+export type PostFormPageProps = {
+    post: Post | null;
+    categories: Pick<Category, 'id' | 'name' | 'slug'>[];
+    media: { data: GalleryImage[] };
+    counts: Record<'all' | 'image' | 'video' | 'other', number>;
+    filter: 'all' | 'image' | 'video' | 'other';
+    search: string;
+};
+
 

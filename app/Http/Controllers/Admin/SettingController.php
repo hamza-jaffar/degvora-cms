@@ -58,6 +58,17 @@ class SettingController extends Controller
         'mail_from_name',
         'mail_from_address',
         'posts_per_page',
+        'shipping_enabled',
+        'shipping_rate_type',
+        'shipping_flat_rate',
+        'shipping_free_threshold',
+        'shipping_origin_country',
+        'shipping_origin_city',
+        'shipping_origin_address',
+        'shipping_origin_postal_code',
+        'shipping_estimated_delivery',
+        'shipping_policy',
+        'product_variations',
     ];
 
     public function index(Request $request): Response
@@ -81,6 +92,20 @@ class SettingController extends Controller
             'timezone' => $values->get('timezone') ?: config('app.timezone'),
             'locale' => $values->get('locale') ?: config('app.locale'),
             'posts_per_page' => $values->get('posts_per_page') ?: '10',
+            'shipping_enabled' => $values->get('shipping_enabled') ?: '1',
+            'shipping_rate_type' => $values->get('shipping_rate_type') ?: 'flat',
+            'shipping_flat_rate' => $values->get('shipping_flat_rate') ?: '0.00',
+            'shipping_free_threshold' => $values->get('shipping_free_threshold') ?: '',
+            'shipping_origin_country' => $values->get('shipping_origin_country') ?: ($values->get('country') ?: 'PK'),
+            'shipping_origin_city' => $values->get('shipping_origin_city') ?: '',
+            'shipping_origin_address' => $values->get('shipping_origin_address') ?: ($values->get('location') ?: ''),
+            'shipping_origin_postal_code' => $values->get('shipping_origin_postal_code') ?: '',
+            'shipping_estimated_delivery' => $values->get('shipping_estimated_delivery') ?: '3-5 business days',
+            'shipping_policy' => $values->get('shipping_policy') ?: '',
+            'product_variations' => $values->get('product_variations') ?: json_encode([
+                ['name' => 'Color', 'values' => ['Black', 'White', 'Red', 'Blue', 'Green']],
+                ['name' => 'Size', 'values' => ['S', 'M', 'L', 'XL', 'XXL']],
+            ]),
         ]);
 
         return Inertia::render('admin/setting/index', [

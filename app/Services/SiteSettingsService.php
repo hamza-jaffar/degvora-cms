@@ -73,6 +73,13 @@ class SiteSettingsService
             'social_linkedin',
             'social_tiktok',
             'footer_text',
+            'shipping_enabled',
+            'shipping_rate_type',
+            'shipping_flat_rate',
+            'shipping_free_threshold',
+            'shipping_estimated_delivery',
+            'shipping_policy',
+            'product_variations',
         ]));
 
         foreach (['logo', 'footer_logo', 'favicon', 'seo_image'] as $key) {

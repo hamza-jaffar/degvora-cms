@@ -82,6 +82,17 @@ class UpdateSiteSettingsRequest extends FormRequest
             'mail_password_clear' => ['sometimes', 'boolean'],
             'mail_from_name' => ['nullable', 'string', 'max:255'],
             'mail_from_address' => ['nullable', 'required_if:mail_mailer,smtp', 'email', 'max:255'],
+            'shipping_enabled' => ['nullable', 'string', 'in:0,1,true,false'],
+            'shipping_rate_type' => ['nullable', 'string', Rule::in(['flat', 'free', 'weight_based'])],
+            'shipping_flat_rate' => ['nullable', 'numeric', 'min:0'],
+            'shipping_free_threshold' => ['nullable', 'numeric', 'min:0'],
+            'shipping_origin_country' => ['nullable', 'string', 'alpha:ascii', 'size:2'],
+            'shipping_origin_city' => ['nullable', 'string', 'max:255'],
+            'shipping_origin_address' => ['nullable', 'string', 'max:255'],
+            'shipping_origin_postal_code' => ['nullable', 'string', 'max:30'],
+            'shipping_estimated_delivery' => ['nullable', 'string', 'max:255'],
+            'shipping_policy' => ['nullable', 'string', 'max:2000'],
+            'product_variations' => ['nullable', 'string', 'json'],
         ];
     }
 
@@ -89,7 +100,7 @@ class UpdateSiteSettingsRequest extends FormRequest
     {
         $normalizedValues = [];
 
-        foreach (['country', 'currency_code', 'google_analytics_id', 'google_tag_manager_id'] as $key) {
+        foreach (['country', 'currency_code', 'shipping_origin_country', 'google_analytics_id', 'google_tag_manager_id'] as $key) {
             if ($this->has($key) && is_string($this->input($key))) {
                 $normalizedValues[$key] = strtoupper(trim($this->input($key)));
             }

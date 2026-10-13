@@ -9,6 +9,7 @@ import {
     Package,
     Tags,
     Paintbrush,
+    Newspaper,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -32,6 +33,7 @@ import products from '@/routes/admin/products';
 import pages from '@/routes/admin/page';
 import themes from '@/routes/admin/themes';
 import menus from '@/routes/admin/menus';
+import posts from '@/routes/admin/posts';
 
 const allNavItems: NavItem[] = [
     {
@@ -60,6 +62,12 @@ const allNavItems: NavItem[] = [
         href: products.index(),
         icon: Package,
         feature: 'product',
+    },
+    {
+        title: 'Blog',
+        href: posts.index(),
+        icon: Newspaper,
+        feature: 'blog',
     },
     {
         title: 'Gallery',

@@ -28,8 +28,13 @@ import {
     Check,
     Globe2,
     LoaderCircle,
+    Plus,
     Save,
     Search,
+    SlidersHorizontal,
+    Trash2,
+    Truck,
+    X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -105,6 +110,17 @@ interface PageProps {
         mail_username: string;
         mail_from_name: string;
         mail_from_address: string;
+        shipping_enabled: string;
+        shipping_rate_type: string;
+        shipping_flat_rate: string;
+        shipping_free_threshold: string;
+        shipping_origin_country: string;
+        shipping_origin_city: string;
+        shipping_origin_address: string;
+        shipping_origin_postal_code: string;
+        shipping_estimated_delivery: string;
+        shipping_policy: string;
+        product_variations: string;
     };
     logoUrl: string | null;
     footerLogoUrl: string | null;
@@ -143,6 +159,27 @@ const settingsSections = [
             "locale",
             "posts_per_page",
         ],
+    },
+    {
+        id: "shipping",
+        label: "Shipping",
+        fields: [
+            "shipping_enabled",
+            "shipping_rate_type",
+            "shipping_flat_rate",
+            "shipping_free_threshold",
+            "shipping_origin_country",
+            "shipping_origin_city",
+            "shipping_origin_address",
+            "shipping_origin_postal_code",
+            "shipping_estimated_delivery",
+            "shipping_policy",
+        ],
+    },
+    {
+        id: "product",
+        label: "Product variations",
+        fields: ["product_variations"],
     },
     {
         id: "seo",
@@ -518,6 +555,73 @@ export default function SiteSettings({
         window.history.replaceState(window.history.state, "", url);
     }, [activeSection]);
 
+    const initialVariations = (): {
+        id: number;
+        name: string;
+        values: string[];
+        draftValue: string;
+    }[] => {
+        try {
+            if (settings.product_variations) {
+                const parsed = JSON.parse(settings.product_variations);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    return parsed.map((item, idx) => ({
+                        id: idx + 1,
+                        name: String(item.name || ""),
+                        values: Array.isArray(item.values)
+                            ? item.values.map(String)
+                            : [],
+                        draftValue: "",
+                    }));
+                }
+            }
+        } catch {}
+        return [
+            {
+                id: 1,
+                name: "Color",
+                values: ["Black", "White", "Red", "Blue", "Green"],
+                draftValue: "",
+            },
+            {
+                id: 2,
+                name: "Size",
+                values: ["S", "M", "L", "XL", "XXL"],
+                draftValue: "",
+            },
+        ];
+    };
+
+    const [variationPresets, setVariationPresets] = useState(initialVariations);
+
+    const updateVariationPresets = (
+        updater: (
+            prev: {
+                id: number;
+                name: string;
+                values: string[];
+                draftValue: string;
+            }[],
+        ) => {
+            id: number;
+            name: string;
+            values: string[];
+            draftValue: string;
+        }[],
+    ) => {
+        setVariationPresets((prev) => {
+            const next = updater(prev);
+            const serialized = next
+                .filter((item) => item.name.trim().length > 0)
+                .map((item) => ({
+                    name: item.name.trim(),
+                    values: item.values,
+                }));
+            setData("product_variations", JSON.stringify(serialized));
+            return next;
+        });
+    };
+
     const { data, setData, post, processing, errors, reset } = useForm<{
         name: string;
         tagline: string;
@@ -554,6 +658,17 @@ export default function SiteSettings({
         mail_password_clear: boolean;
         mail_from_name: string;
         mail_from_address: string;
+        shipping_enabled: string;
+        shipping_rate_type: string;
+        shipping_flat_rate: string;
+        shipping_free_threshold: string;
+        shipping_origin_country: string;
+        shipping_origin_city: string;
+        shipping_origin_address: string;
+        shipping_origin_postal_code: string;
+        shipping_estimated_delivery: string;
+        shipping_policy: string;
+        product_variations: string;
         logo_path: string | null;
         footer_logo_path: string | null;
         favicon_path: string | null;
@@ -564,6 +679,23 @@ export default function SiteSettings({
         posts_per_page: settings.posts_per_page || "10",
         mail_password: "",
         mail_password_clear: false,
+        shipping_enabled: settings.shipping_enabled || "1",
+        shipping_rate_type: settings.shipping_rate_type || "flat",
+        shipping_flat_rate: settings.shipping_flat_rate || "0.00",
+        shipping_free_threshold: settings.shipping_free_threshold || "",
+        shipping_origin_country: (
+            settings.shipping_origin_country ||
+            settings.country ||
+            "PK"
+        ).toUpperCase(),
+        shipping_origin_city: settings.shipping_origin_city || "",
+        shipping_origin_address: settings.shipping_origin_address || "",
+        shipping_origin_postal_code:
+            settings.shipping_origin_postal_code || "",
+        shipping_estimated_delivery:
+            settings.shipping_estimated_delivery || "3-5 business days",
+        shipping_policy: settings.shipping_policy || "",
+        product_variations: settings.product_variations || "[]",
         seo_image_path: null,
         logo_path: null,
         footer_logo_path: null,
@@ -1002,6 +1134,468 @@ export default function SiteSettings({
                                     {errors.location}
                                 </p>
                             )}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card
+                    id="settings-panel-shipping"
+                    role="tabpanel"
+                    aria-labelledby="settings-tab-shipping"
+                    tabIndex={0}
+                    hidden={activeSection !== "shipping"}
+                >
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Truck className="size-5 text-primary" />
+                            Shipping settings
+                        </CardTitle>
+                        <CardDescription>
+                            Configure shipping rates, delivery estimation, and dispatch origin details.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-5 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="shipping_enabled">Shipping status</Label>
+                            <select
+                                id="shipping_enabled"
+                                value={data.shipping_enabled}
+                                className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                onChange={(event) => setData("shipping_enabled", event.target.value)}
+                            >
+                                <option value="1">Enabled - Shipping is calculated at checkout</option>
+                                <option value="0">Disabled - Free shipping on all products</option>
+                            </select>
+                            <p className="text-xs text-muted-foreground">
+                                Controls whether physical products require shipping charges.
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="shipping_rate_type">Calculation method</Label>
+                            <select
+                                id="shipping_rate_type"
+                                value={data.shipping_rate_type}
+                                className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                onChange={(event) => setData("shipping_rate_type", event.target.value)}
+                            >
+                                <option value="flat">Flat rate per order</option>
+                                <option value="free">Always free shipping</option>
+                                <option value="weight_based">Weight-based calculation</option>
+                            </select>
+                            <p className="text-xs text-muted-foreground">
+                                Method used to calculate standard shipping fees.
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="shipping_flat_rate">
+                                Default flat rate ({data.currency_code || "PKR"})
+                            </Label>
+                            <Input
+                                id="shipping_flat_rate"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={data.shipping_flat_rate}
+                                placeholder="0.00"
+                                aria-invalid={Boolean(errors.shipping_flat_rate)}
+                                onChange={(event) =>
+                                    setData("shipping_flat_rate", event.target.value)
+                                }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Standard shipping fee charged when flat rate is selected.
+                            </p>
+                            {errors.shipping_flat_rate && (
+                                <p className="text-sm text-destructive">{errors.shipping_flat_rate}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="shipping_free_threshold">
+                                Free shipping threshold ({data.currency_code || "PKR"})
+                            </Label>
+                            <Input
+                                id="shipping_free_threshold"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={data.shipping_free_threshold}
+                                placeholder="e.g. 2500.00"
+                                aria-invalid={Boolean(errors.shipping_free_threshold)}
+                                onChange={(event) =>
+                                    setData("shipping_free_threshold", event.target.value)
+                                }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Orders with a subtotal exceeding this amount receive free shipping. Leave blank to disable.
+                            </p>
+                            {errors.shipping_free_threshold && (
+                                <p className="text-sm text-destructive">{errors.shipping_free_threshold}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <SearchableSelect
+                                id="shipping_origin_country"
+                                label="Dispatch origin country"
+                                placeholder="Select warehouse country"
+                                value={data.shipping_origin_country}
+                                options={countryOptions}
+                                error={errors.shipping_origin_country}
+                                onChange={(code) => setData("shipping_origin_country", code)}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="shipping_origin_city">Dispatch origin city</Label>
+                            <Input
+                                id="shipping_origin_city"
+                                value={data.shipping_origin_city}
+                                placeholder="e.g. Lahore, Karachi"
+                                aria-invalid={Boolean(errors.shipping_origin_city)}
+                                onChange={(event) =>
+                                    setData("shipping_origin_city", event.target.value)
+                                }
+                            />
+                            {errors.shipping_origin_city && (
+                                <p className="text-sm text-destructive">{errors.shipping_origin_city}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="shipping_origin_address">Warehouse / pickup address</Label>
+                            <Input
+                                id="shipping_origin_address"
+                                value={data.shipping_origin_address}
+                                placeholder="Street address or warehouse location"
+                                aria-invalid={Boolean(errors.shipping_origin_address)}
+                                onChange={(event) =>
+                                    setData("shipping_origin_address", event.target.value)
+                                }
+                            />
+                            {errors.shipping_origin_address && (
+                                <p className="text-sm text-destructive">{errors.shipping_origin_address}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="shipping_origin_postal_code">Postal / zip code</Label>
+                            <Input
+                                id="shipping_origin_postal_code"
+                                value={data.shipping_origin_postal_code}
+                                placeholder="e.g. 54000"
+                                aria-invalid={Boolean(errors.shipping_origin_postal_code)}
+                                onChange={(event) =>
+                                    setData("shipping_origin_postal_code", event.target.value)
+                                }
+                            />
+                            {errors.shipping_origin_postal_code && (
+                                <p className="text-sm text-destructive">{errors.shipping_origin_postal_code}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="shipping_estimated_delivery">Estimated delivery time</Label>
+                            <Input
+                                id="shipping_estimated_delivery"
+                                value={data.shipping_estimated_delivery}
+                                placeholder="e.g. 3-5 business days"
+                                aria-invalid={Boolean(errors.shipping_estimated_delivery)}
+                                onChange={(event) =>
+                                    setData("shipping_estimated_delivery", event.target.value)
+                                }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Displayed to customers during checkout and on product detail pages.
+                            </p>
+                            {errors.shipping_estimated_delivery && (
+                                <p className="text-sm text-destructive">{errors.shipping_estimated_delivery}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="shipping_policy">Shipping policy & customer notes</Label>
+                            <textarea
+                                id="shipping_policy"
+                                value={data.shipping_policy}
+                                rows={3}
+                                placeholder="Detail processing times, shipping carrier info, or delivery coverage notes."
+                                className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                onChange={(event) => setData("shipping_policy", event.target.value)}
+                            />
+                            {errors.shipping_policy && (
+                                <p className="text-sm text-destructive">{errors.shipping_policy}</p>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card
+                    id="settings-panel-product"
+                    role="tabpanel"
+                    aria-labelledby="settings-tab-product"
+                    tabIndex={0}
+                    hidden={activeSection !== "product"}
+                >
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <SlidersHorizontal className="size-5 text-primary" />
+                            Predefined product variations
+                        </CardTitle>
+                        <CardDescription>
+                            Create reusable variation attributes like Color, Size, and Material. These predefined options appear in the product editor for instant one-click setup.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <input
+                            type="hidden"
+                            name="product_variations"
+                            value={data.product_variations}
+                        />
+
+                        <div className="space-y-4">
+                            {variationPresets.map((preset, index) => (
+                                <div
+                                    key={preset.id}
+                                    className="rounded-lg border bg-card p-4 space-y-4"
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex-1 space-y-1">
+                                            <Label htmlFor={`preset-name-${preset.id}`}>
+                                                Variation attribute #{index + 1}
+                                            </Label>
+                                            <Input
+                                                id={`preset-name-${preset.id}`}
+                                                value={preset.name}
+                                                maxLength={50}
+                                                placeholder="e.g. Color, Size, Material"
+                                                className="font-medium"
+                                                onChange={(e) => {
+                                                    const newName = e.target.value;
+                                                    updateVariationPresets((current) =>
+                                                        current.map((item) =>
+                                                            item.id === preset.id
+                                                                ? { ...item, name: newName }
+                                                                : item,
+                                                        ),
+                                                    );
+                                                }}
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-muted-foreground hover:text-destructive self-end"
+                                            title="Delete variation attribute"
+                                            aria-label={`Delete ${preset.name || "variation"}`}
+                                            disabled={variationPresets.length <= 1}
+                                            onClick={() => {
+                                                updateVariationPresets((current) =>
+                                                    current.filter((item) => item.id !== preset.id),
+                                                );
+                                            }}
+                                        >
+                                            <Trash2 className="size-4" />
+                                        </Button>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Pre-created values</Label>
+                                        <div className="flex min-h-9 flex-wrap gap-1.5 rounded-md border border-dashed p-2 bg-muted/20">
+                                            {preset.values.length === 0 ? (
+                                                <span className="text-xs text-muted-foreground italic py-1">
+                                                    No values added yet. Type a value below and press Enter.
+                                                </span>
+                                            ) : (
+                                                preset.values.map((val) => (
+                                                    <span
+                                                        key={val}
+                                                        className="inline-flex items-center gap-1 rounded-md border bg-background py-1 pr-1 pl-2 text-xs font-medium shadow-xs"
+                                                    >
+                                                        {val}
+                                                        <button
+                                                            type="button"
+                                                            className="inline-flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                            aria-label={`Remove value ${val}`}
+                                                            onClick={() => {
+                                                                updateVariationPresets((current) =>
+                                                                    current.map((item) =>
+                                                                        item.id === preset.id
+                                                                            ? {
+                                                                                  ...item,
+                                                                                  values: item.values.filter(
+                                                                                      (v) => v !== val,
+                                                                                  ),
+                                                                              }
+                                                                            : item,
+                                                                    ),
+                                                                );
+                                                            }}
+                                                        >
+                                                            <X className="size-3" />
+                                                        </button>
+                                                    </span>
+                                                ))
+                                            )}
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={preset.draftValue}
+                                                maxLength={100}
+                                                placeholder={`Add a value to ${preset.name || "variation"} (e.g. ${preset.name.toLowerCase() === "size" ? "XL" : preset.name.toLowerCase() === "color" ? "Blue" : "Cotton"}) and press Enter`}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setVariationPresets((current) =>
+                                                        current.map((item) =>
+                                                            item.id === preset.id
+                                                                ? { ...item, draftValue: val }
+                                                                : item,
+                                                        ),
+                                                    );
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter") {
+                                                        e.preventDefault();
+                                                        const trimmed = preset.draftValue.trim();
+                                                        if (!trimmed) return;
+                                                        if (
+                                                            preset.values.some(
+                                                                (v) =>
+                                                                    v.toLowerCase() ===
+                                                                    trimmed.toLowerCase(),
+                                                            )
+                                                        ) {
+                                                            setVariationPresets((current) =>
+                                                                current.map((item) =>
+                                                                    item.id === preset.id
+                                                                        ? { ...item, draftValue: "" }
+                                                                        : item,
+                                                                ),
+                                                            );
+                                                            return;
+                                                        }
+                                                        updateVariationPresets((current) =>
+                                                            current.map((item) =>
+                                                                item.id === preset.id
+                                                                    ? {
+                                                                          ...item,
+                                                                          values: [
+                                                                              ...item.values,
+                                                                              trimmed,
+                                                                          ],
+                                                                          draftValue: "",
+                                                                      }
+                                                                    : item,
+                                                            ),
+                                                        );
+                                                    }
+                                                }}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="gap-1 shrink-0"
+                                                disabled={!preset.draftValue.trim()}
+                                                onClick={() => {
+                                                    const trimmed = preset.draftValue.trim();
+                                                    if (!trimmed) return;
+                                                    if (
+                                                        preset.values.some(
+                                                            (v) =>
+                                                                v.toLowerCase() ===
+                                                                trimmed.toLowerCase(),
+                                                        )
+                                                    ) {
+                                                        setVariationPresets((current) =>
+                                                            current.map((item) =>
+                                                                item.id === preset.id
+                                                                    ? { ...item, draftValue: "" }
+                                                                    : item,
+                                                            ),
+                                                        );
+                                                        return;
+                                                    }
+                                                    updateVariationPresets((current) =>
+                                                        current.map((item) =>
+                                                            item.id === preset.id
+                                                                ? {
+                                                                      ...item,
+                                                                      values: [
+                                                                          ...item.values,
+                                                                          trimmed,
+                                                                      ],
+                                                                      draftValue: "",
+                                                                  }
+                                                                : item,
+                                                        ),
+                                                    );
+                                                }}
+                                            >
+                                                <Plus className="size-3.5" />
+                                                Add value
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="gap-2"
+                                onClick={() => {
+                                    updateVariationPresets((current) => [
+                                        ...current,
+                                        {
+                                            id: Date.now(),
+                                            name: "",
+                                            values: [],
+                                            draftValue: "",
+                                        },
+                                    ]);
+                                }}
+                            >
+                                <Plus className="size-4" />
+                                Add new variation attribute
+                            </Button>
+
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs text-muted-foreground hover:text-foreground"
+                                onClick={() => {
+                                    updateVariationPresets(() => [
+                                        {
+                                            id: 1,
+                                            name: "Color",
+                                            values: ["Black", "White", "Red", "Blue", "Green", "Yellow", "Grey"],
+                                            draftValue: "",
+                                        },
+                                        {
+                                            id: 2,
+                                            name: "Size",
+                                            values: ["XS", "S", "M", "L", "XL", "XXL", "3XL"],
+                                            draftValue: "",
+                                        },
+                                        {
+                                            id: 3,
+                                            name: "Material",
+                                            values: ["Cotton", "Polyester", "Silk", "Wool", "Linen"],
+                                            draftValue: "",
+                                        },
+                                    ]);
+                                }}
+                            >
+                                Reset to standard templates (Color, Size, Material)
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
