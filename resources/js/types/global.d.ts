@@ -13,6 +13,7 @@ declare module '@inertiajs/core' {
             auth: Auth;
             sidebarOpen: boolean;
             cmsFeatures: Record<string, boolean>;
+            navForms?: import('@/types/data').NavForm[];
             [key: string]: unknown;
         };
     }

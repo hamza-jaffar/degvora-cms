@@ -66,9 +66,9 @@ const PostIndex = ({ posts: postList, filters, categories }: PostIndexPageProps)
                     href={posts.edit(row.slug).url}
                     className="flex min-w-0 items-center gap-3 text-left"
                 >
-                    {row.featured_media_asset ? (
+                    {row.featured_image_asset ? (
                         <img
-                            src={row.featured_media_asset.url}
+                            src={row.featured_image_asset.url}
                             alt=""
                             loading="lazy"
                             className="size-11 shrink-0 rounded-md border object-cover"

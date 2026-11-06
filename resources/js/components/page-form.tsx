@@ -58,8 +58,8 @@ export type PageFormProps = {
 };
 
 const defaultTemplates = [
-    { value: "page", label: "Default Page" },
-    { value: "template", label: "Theme template" },
+    { value: "page", label: "Page (page.blade.php)" },
+    { value: "blank", label: "Blank Page (No Layout)" },
 ];
 
 const PageForm = ({
@@ -76,8 +76,13 @@ const PageForm = ({
     cancelHref,
 }: PageFormProps) => {
     // Form Action (Update vs Store)
+    const pageKey = page
+        ? page.slug === "/"
+            ? String(page.id)
+            : page.slug
+        : "";
     const action = page
-        ? { action: pages.update.url(page.slug), method: "put" as const }
+        ? { action: pages.update.url(pageKey), method: "put" as const }
         : pages.store.form();
 
     // Auto-slug state
@@ -87,7 +92,15 @@ const PageForm = ({
     const [parentId, setParentId] = useState<string>(
         page?.parent_id ? String(page.parent_id) : "none",
     );
-    const [template, setTemplate] = useState(page?.template ?? "page");
+    const [template, setTemplate] = useState(() => {
+        if (page?.template) {
+            if (page.template === "template" || page.template === "default") {
+                return "page";
+            }
+            return page.template.replace(/^\/+|\/+$/g, "");
+        }
+        return templates[0]?.value ?? "page";
+    });
     const [status, setStatus] = useState<string>(page?.status ?? "draft");
     const [visibility, setVisibility] = useState<string>(
         page?.visibility ?? "public",
@@ -130,19 +143,25 @@ const PageForm = ({
 
     const handleNameChange = (newName: string) => {
         setName(newName);
-        if (autoSlug) {
+        if (autoSlug && slug !== "/") {
             setSlug(slugify(newName));
         }
     };
 
     // Calculate parent slug path prefix
     const selectedParent = useMemo(() => {
-        if (parentId === "none") return null;
+        if (parentId === "none" || slug === "/") return null;
         return parentPages.find((p) => String(p.id) === parentId) ?? null;
-    }, [parentId, parentPages]);
+    }, [parentId, parentPages, slug]);
 
     const permalinkPath = useMemo(() => {
-        const parentPrefix = selectedParent ? `${selectedParent.slug}/` : "";
+        if (slug === "/") {
+            return "/";
+        }
+        const parentPrefix =
+            selectedParent && selectedParent.slug !== "/"
+                ? `${selectedParent.slug}/`
+                : "";
         return `/${parentPrefix}${slug || "page-slug"}`;
     }, [selectedParent, slug]);
 
@@ -272,57 +291,113 @@ const PageForm = ({
 
                                 {/* Slug & Permalink Box */}
                                 <div className="space-y-2 rounded-lg border bg-muted/30 p-3 text-xs">
-                                    <div className="flex items-center justify-between gap-2">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
                                         <div className="flex items-center gap-1.5 font-medium text-muted-foreground">
                                             <Globe className="size-3.5 text-primary" />{" "}
                                             Permalink Preview:
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setAutoSlug(!autoSlug)
-                                            }
-                                            className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
-                                            title={
-                                                autoSlug
-                                                    ? "Lock Slug (Stop auto-generating from title)"
-                                                    : "Unlock Slug (Auto-generate from title)"
-                                            }
-                                        >
-                                            {autoSlug ? (
-                                                <>
-                                                    <Lock className="size-3" />{" "}
-                                                    Auto Slug Enabled
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Unlock className="size-3 text-amber-600" />{" "}
-                                                    Manual Slug Mode
-                                                </>
+                                            {slug === "/" && (
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="text-[10px] h-5 bg-primary/10 text-primary border-primary/20"
+                                                >
+                                                    Home Page (/)
+                                                </Badge>
                                             )}
-                                        </button>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (slug === "/") {
+                                                        setSlug(
+                                                            slugify(name) ||
+                                                                "page-slug",
+                                                        );
+                                                    } else {
+                                                        setSlug("/");
+                                                        setParentId("none");
+                                                        setAutoSlug(false);
+                                                    }
+                                                }}
+                                                className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-medium"
+                                            >
+                                                {slug === "/"
+                                                    ? "Use standard slug"
+                                                    : "Set as Home Page (/)"}
+                                            </button>
+                                            <span className="text-muted-foreground/40">
+                                                |
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setAutoSlug(!autoSlug)
+                                                }
+                                                className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                                                title={
+                                                    autoSlug
+                                                        ? "Lock Slug (Stop auto-generating from title)"
+                                                        : "Unlock Slug (Auto-generate from title)"
+                                                }
+                                            >
+                                                {autoSlug ? (
+                                                    <>
+                                                        <Lock className="size-3" />{" "}
+                                                        Auto Slug Enabled
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Unlock className="size-3 text-amber-600" />{" "}
+                                                        Manual Slug Mode
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div className="flex items-center gap-2">
                                         <div className="flex-1 flex items-center overflow-hidden rounded border bg-background px-2.5 py-1.5 text-muted-foreground font-mono">
                                             <span className="shrink-0 text-muted-foreground/70">
                                                 https://yourdomain.com
-                                                {selectedParent
-                                                    ? `/${selectedParent.slug}`
-                                                    : ""}
-                                                /
+                                                {slug === "/"
+                                                    ? ""
+                                                    : selectedParent
+                                                      ? `/${selectedParent.slug}`
+                                                      : ""}
+                                                {slug === "/" ? "" : "/"}
                                             </span>
                                             <input
                                                 type="text"
                                                 name="slug"
                                                 value={slug}
                                                 onChange={(e) => {
-                                                    setSlug(
-                                                        slugify(e.target.value),
-                                                    );
+                                                    const val =
+                                                        e.target.value.trim();
+                                                    if (
+                                                        val === "/" ||
+                                                        val === ""
+                                                    ) {
+                                                        setSlug(val);
+                                                        if (val === "/") {
+                                                            setParentId("none");
+                                                        }
+                                                    } else {
+                                                        setSlug(
+                                                            slugify(
+                                                                val.replace(
+                                                                    /^\/+/,
+                                                                    "",
+                                                                ),
+                                                            ),
+                                                        );
+                                                    }
                                                     setAutoSlug(false);
                                                 }}
-                                                placeholder="page-slug"
+                                                placeholder={
+                                                    slug === "/"
+                                                        ? "/"
+                                                        : "page-slug"
+                                                }
                                                 className="w-full bg-transparent font-semibold text-foreground outline-none border-none p-0 focus:ring-0 text-xs"
                                             />
                                         </div>
@@ -413,9 +488,17 @@ const PageForm = ({
                                             </span>
                                             <button
                                                 type="button"
-                                                onClick={() => setIsFullScreen(!isFullScreen)}
+                                                onClick={() =>
+                                                    setIsFullScreen(
+                                                        !isFullScreen,
+                                                    )
+                                                }
                                                 className="text-zinc-400 hover:text-white transition-colors"
-                                                title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+                                                title={
+                                                    isFullScreen
+                                                        ? "Exit Full Screen"
+                                                        : "Full Screen"
+                                                }
                                             >
                                                 {isFullScreen ? (
                                                     <Minimize className="size-4" />
@@ -430,7 +513,9 @@ const PageForm = ({
                                                 language="html"
                                                 theme="vs-dark"
                                                 value={content}
-                                                onChange={(value) => setContent(value || "")}
+                                                onChange={(value) =>
+                                                    setContent(value || "")
+                                                }
                                                 options={{
                                                     minimap: { enabled: false },
                                                     wordWrap: "on",
@@ -799,8 +884,7 @@ const PageForm = ({
                                 </h3>
 
                                 <div className="space-y-3">
-                                    <div className="w-full flex gap-2">
-                                        <div className="space-y-1.5 w-full">
+                                        <div className="space-y-1.5">
                                             <Label
                                                 htmlFor="parent_id"
                                                 className="text-xs font-medium"
@@ -808,8 +892,13 @@ const PageForm = ({
                                                 Parent Page (Hierarchy)
                                             </Label>
                                             <Select
-                                                value={parentId}
+                                                value={
+                                                    slug === "/"
+                                                        ? "none"
+                                                        : parentId
+                                                }
                                                 onValueChange={setParentId}
+                                                disabled={slug === "/"}
                                             >
                                                 <SelectTrigger className="text-xs bg-background w-full">
                                                     <SelectValue placeholder="Select Parent Page" />
@@ -818,8 +907,13 @@ const PageForm = ({
                                                     <SelectItem value="none">
                                                         None (Top-Level Page)
                                                     </SelectItem>
-                                                    {parentPages.map(
-                                                        (parent) => (
+                                                    {parentPages
+                                                        .filter(
+                                                            (parent) =>
+                                                                parent.slug !==
+                                                                "/",
+                                                        )
+                                                        .map((parent) => (
                                                             <SelectItem
                                                                 key={parent.id}
                                                                 value={String(
@@ -829,14 +923,21 @@ const PageForm = ({
                                                                 {parent.name} (/
                                                                 {parent.slug})
                                                             </SelectItem>
-                                                        ),
-                                                    )}
+                                                        ))}
                                                 </SelectContent>
                                             </Select>
+                                            {slug === "/" && (
+                                                <p className="text-[11px] text-muted-foreground">
+                                                    Home page (/) is the root
+                                                    page and cannot have a
+                                                    parent.
+                                                </p>
+                                            )}
                                             <input
                                                 type="hidden"
                                                 name="parent_id"
                                                 value={
+                                                    slug === "/" ||
                                                     parentId === "none"
                                                         ? ""
                                                         : parentId
@@ -846,70 +947,80 @@ const PageForm = ({
                                                 message={errors.parent_id}
                                             />
                                         </div>
-
                                         <div className="space-y-1.5 w-full">
                                             <Label
-                                                htmlFor="template"
+                                                htmlFor="sort_order"
                                                 className="text-xs font-medium"
                                             >
-                                                Page Template
+                                                Menu Sort Order
                                             </Label>
-                                            <Select
-                                                value={template}
-                                                onValueChange={setTemplate}
-                                            >
-                                                <SelectTrigger className="text-xs bg-background w-full">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {templates.map((tpl) => (
-                                                        <SelectItem
-                                                            key={tpl.value}
-                                                            value={tpl.value}
-                                                        >
-                                                            {tpl.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <input
-                                                type="hidden"
-                                                name="template"
-                                                value={template}
+                                            <Input
+                                                id="sort_order"
+                                                type="number"
+                                                name="sort_order"
+                                                value={sortOrder}
+                                                onChange={(e) =>
+                                                    setSortOrder(
+                                                        Number(e.target.value),
+                                                    )
+                                                }
+                                                min={0}
+                                                className="text-xs"
                                             />
+                                            <p className="text-[11px] text-muted-foreground">
+                                                Lower numbers appear first in
+                                                navigation menus.
+                                            </p>
                                             <InputError
-                                                message={errors.template}
+                                                message={errors.sort_order}
                                             />
                                         </div>
-                                    </div>
 
                                     <div className="space-y-1.5">
                                         <Label
-                                            htmlFor="sort_order"
+                                            htmlFor="template"
                                             className="text-xs font-medium"
                                         >
-                                            Menu Sort Order
+                                            Page Template
                                         </Label>
-                                        <Input
-                                            id="sort_order"
-                                            type="number"
-                                            name="sort_order"
-                                            value={sortOrder}
-                                            onChange={(e) =>
-                                                setSortOrder(
-                                                    Number(e.target.value),
-                                                )
-                                            }
-                                            min={0}
-                                            className="text-xs"
+                                        <Select
+                                            value={template}
+                                            onValueChange={setTemplate}
+                                        >
+                                            <SelectTrigger className="text-xs bg-background w-full">
+                                                <SelectValue placeholder="Select Page Template" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {templates.map((tpl) => (
+                                                    <SelectItem
+                                                        key={tpl.value}
+                                                        value={tpl.value}
+                                                    >
+                                                        {tpl.label}
+                                                    </SelectItem>
+                                                ))}
+                                                {template &&
+                                                    !templates.some(
+                                                        (tpl) =>
+                                                            tpl.value ===
+                                                            template,
+                                                    ) && (
+                                                        <SelectItem
+                                                            value={template}
+                                                        >
+                                                            {template} (
+                                                            {template}
+                                                            .blade.php)
+                                                        </SelectItem>
+                                                    )}
+                                            </SelectContent>
+                                        </Select>
+                                        <input
+                                            type="hidden"
+                                            name="template"
+                                            value={template}
                                         />
-                                        <p className="text-[11px] text-muted-foreground">
-                                            Lower numbers appear first in
-                                            navigation menus.
-                                        </p>
-                                        <InputError
-                                            message={errors.sort_order}
-                                        />
+                                        <InputError message={errors.template} />
                                     </div>
                                 </div>
                             </Card>
@@ -945,7 +1056,9 @@ const PageForm = ({
 
                                     {selectedImage && (
                                         <div className="flex flex-col items-center justify-between pt-1">
-                                            <img src={`/storage/${selectedImage.path}`} />
+                                            <img
+                                                src={`/storage/${selectedImage.path}`}
+                                            />
                                             <Button
                                                 type="button"
                                                 variant="ghost"

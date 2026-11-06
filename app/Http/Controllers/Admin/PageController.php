@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\Page\StorePageRequest;
 use App\Http\Requests\Admin\Page\UpdatePageRequest;
 use App\Models\Gallery;
 use App\Models\Page;
+use App\Services\Theme\ThemeManager;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -70,7 +71,7 @@ class PageController extends Controller
             : ($data['status'] === 'scheduled' ? $data['published_at'] : null);
 
         $page = Page::query()->create($data);
-        $this->forgetPageCaches($page->slug);
+        $this->forgetPageCaches($page->slug, $page->path);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Page created successfully.')]);
 
@@ -96,7 +97,7 @@ class PageController extends Controller
             : ($data['status'] === 'scheduled' ? $data['published_at'] : null);
 
         $page->update($data);
-        $this->forgetPageCaches($previousSlug, $page->slug);
+        $this->forgetPageCaches($previousSlug, $page->slug, $page->path);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Page updated successfully.')]);
 
@@ -106,8 +107,9 @@ class PageController extends Controller
     public function destroy(Page $page): RedirectResponse
     {
         $slug = $page->slug;
+        $path = $page->path;
         $page->delete();
-        $this->forgetPageCaches($slug);
+        $this->forgetPageCaches($slug, $path);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Page moved to trash successfully.')]);
 
@@ -116,9 +118,11 @@ class PageController extends Controller
 
     public function restore(string $page): RedirectResponse
     {
-        $model = Page::withTrashed()->findOrFail($page);
+        $model = Page::withTrashed()
+            ->where(fn (Builder $builder) => $builder->where('id', $page)->orWhere('slug', $page))
+            ->firstOrFail();
         $model->restore();
-        $this->forgetPageCaches($model->slug);
+        $this->forgetPageCaches($model->slug, $model->path);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Page restored successfully.')]);
 
@@ -127,9 +131,11 @@ class PageController extends Controller
 
     public function forceDelete(string $page): RedirectResponse
     {
-        $model = Page::withTrashed()->findOrFail($page);
+        $model = Page::withTrashed()
+            ->where(fn (Builder $builder) => $builder->where('id', $page)->orWhere('slug', $page))
+            ->firstOrFail();
         $model->forceDelete();
-        $this->forgetPageCaches($model->slug);
+        $this->forgetPageCaches($model->slug, $model->path);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Page permanently deleted.')]);
 
@@ -194,7 +200,12 @@ class PageController extends Controller
             'counts' => $allCounts,
             'filter' => $filter,
             'search' => $search,
-            'parentPages' => Page::query()->whereNull('parent_id')->orderBy('name')->get(['id', 'name', 'slug']),
+            'templates' => app(ThemeManager::class)->pageTemplates(),
+            'parentPages' => Page::query()
+                ->whereNull('parent_id')
+                ->where('slug', '!=', '/')
+                ->orderBy('name')
+                ->get(['id', 'name', 'slug']),
         ];
     }
 
@@ -203,6 +214,11 @@ class PageController extends Controller
     {
         $data = $page->toArray();
         $data['featured_media_asset'] = $this->galleryAssetForPath($page->featured_media);
+
+        if ($data['template'] === 'template' || $data['template'] === 'default') {
+            $theme = app(ThemeManager::class);
+            $data['template'] = $theme->hasTemplate($page->slug) ? $page->slug : 'template';
+        }
 
         return $data;
     }
@@ -256,10 +272,17 @@ class PageController extends Controller
     private function forgetPageCaches(string ...$slugs): void
     {
         foreach (array_unique($slugs) as $slug) {
+            $cleaned = ltrim($slug, '/');
+            $cacheSuffix = str_replace(['/', '\\'], '.', $cleaned);
             Cache::forget("storefront.pages.slug.{$slug}");
             Cache::forget("storefront.pages.slug.v2.{$slug}");
+            Cache::forget("storefront.pages.slug.v3.{$cacheSuffix}");
         }
 
+        Cache::forget('storefront.pages.slug.root');
+        Cache::forget('storefront.pages.slug.v2.root');
+        Cache::forget('storefront.pages.slug./');
+        Cache::forget('storefront.pages.slug.v2./');
         Cache::forget('admin.menu_items.pages');
         Cache::forget('admin.menu_items.pages.v2');
     }

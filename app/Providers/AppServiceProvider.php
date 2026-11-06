@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\SiteSettingsService;
+use App\Services\Theme\ThemeContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
         $siteSettings = app(SiteSettingsService::class);
         $siteSettings->applyRuntimeConfiguration();
         View::share('siteSettings', $siteSettings->publicValues());
+        View::share('theme', app(ThemeContext::class));
     }
 
     /**

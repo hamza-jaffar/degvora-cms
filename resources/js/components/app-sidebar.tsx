@@ -10,6 +10,7 @@ import {
     Tags,
     Paintbrush,
     Newspaper,
+    Inbox,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -19,11 +20,14 @@ import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useCurrentUrl } from '@/hooks/use-current-url';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import users from '@/routes/admin/users';
@@ -96,7 +100,8 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { cmsFeatures } = usePage().props;
+    const { cmsFeatures, navForms } = usePage().props;
+    const { isCurrentUrl } = useCurrentUrl();
 
     const mainNavItems = allNavItems.filter(
         (item) => !item.feature || cmsFeatures[item.feature] === true,
@@ -118,6 +123,41 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
+
+                {cmsFeatures.form !== false && navForms && navForms.length > 0 && (
+                    <SidebarGroup className="px-2 py-0">
+                        <SidebarGroupLabel className="flex items-center justify-between">
+                            <span>Forms</span>
+                            <span className="text-[10px] text-muted-foreground font-normal">
+                                {navForms.length} active
+                            </span>
+                        </SidebarGroupLabel>
+                        <SidebarMenu>
+                            {navForms.map((item) => {
+                                const href = `/admin/forms/${item.slug}`;
+                                return (
+                                    <SidebarMenuItem key={item.slug}>
+                                        <SidebarMenuButton
+                                            asChild
+                                            isActive={isCurrentUrl(href, undefined, true)}
+                                            tooltip={{ children: item.name }}
+                                        >
+                                            <Link href={href} prefetch>
+                                                <Inbox className="size-4 shrink-0" />
+                                                <span className="truncate">{item.name}</span>
+                                                {typeof item.unread_count === 'number' && item.unread_count > 0 && (
+                                                    <span className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                                                        {item.unread_count > 99 ? '99+' : item.unread_count}
+                                                    </span>
+                                                )}
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                );
+                            })}
+                        </SidebarMenu>
+                    </SidebarGroup>
+                )}
             </SidebarContent>
 
             <SidebarFooter>

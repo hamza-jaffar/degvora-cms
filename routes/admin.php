@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\FormController;
+use App\Http\Controllers\Admin\FormSubmissionController;
 use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\MenuItemController;
@@ -57,6 +59,21 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
         Route::resource('posts', PostController::class)->names('admin.posts');
         Route::post('posts/{post}/restore', [PostController::class, 'restore'])->name('admin.posts.restore')->withTrashed();
         Route::delete('posts/{post}/force-delete', [PostController::class, 'forceDelete'])->name('admin.posts.force-delete')->withTrashed();
+    });
+
+    // Custom Forms & Submissions
+    Route::middleware('feature:form')->group(function () {
+        Route::post('forms', [FormController::class, 'store'])->name('admin.forms.store');
+        Route::put('forms/{form:slug}', [FormController::class, 'update'])->name('admin.forms.update');
+        Route::post('forms/{form:slug}/toggle', [FormController::class, 'toggleStatus'])->name('admin.forms.toggle');
+        Route::delete('forms/{form:slug}', [FormController::class, 'destroy'])->name('admin.forms.destroy');
+
+        Route::get('forms/{form:slug}', [FormSubmissionController::class, 'index'])->name('admin.forms.submissions.index');
+        Route::patch('forms/{form:slug}/submissions/{submission}/status', [FormSubmissionController::class, 'updateStatus'])->name('admin.forms.submissions.status');
+        Route::post('forms/{form:slug}/submissions/{submission}/star', [FormSubmissionController::class, 'toggleStar'])->name('admin.forms.submissions.star');
+        Route::delete('forms/{form:slug}/submissions/{submission}', [FormSubmissionController::class, 'destroy'])->name('admin.forms.submissions.destroy');
+        Route::post('forms/{form:slug}/submissions/bulk', [FormSubmissionController::class, 'bulk'])->name('admin.forms.submissions.bulk');
+        Route::get('forms/{form:slug}/export', [FormSubmissionController::class, 'exportCsv'])->name('admin.forms.submissions.export');
     });
 
     Route::get('/settings/site', [SettingController::class, 'index'])->name('admin.setting.index');

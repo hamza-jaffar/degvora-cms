@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Form;
 use App\Services\SiteSettingsService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -45,6 +46,14 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'cmsFeatures' => config('cms.features', []),
+            'navForms' => fn (): array => $request->user() && config('cms.features.form', true)
+                ? Form::query()
+                    ->where('is_active', true)
+                    ->withCount(['submissions as unread_count' => fn ($q) => $q->where('status', 'unread')])
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'slug'])
+                    ->toArray()
+                : [],
         ];
     }
 }

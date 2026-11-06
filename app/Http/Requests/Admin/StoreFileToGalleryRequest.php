@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 
 class StoreFileToGalleryRequest extends FormRequest
@@ -34,7 +35,7 @@ class StoreFileToGalleryRequest extends FormRequest
                 return [
                     'required',
                     'file',
-                    'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,mp4,mov,webm,avi,mkv',
+                    'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,mp4,mov,webm,avi,mkv,svg',
                     'max:'.$maxSize,
                 ];
             }),

@@ -107,7 +107,7 @@ const UploadForm: React.FC<{ onUploadSuccess: () => void }> = ({
                 }}
                 multiple
                 name="files[]"
-                accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime,video/webm,video/x-msvideo,video/x-matroska,.pdf,.doc,.docx,.mp4,.mov,.webm,.avi,.mkv"
+                accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime,video/webm,video/x-msvideo,video/x-matroska,.pdf,.doc,.docx,.mp4,.mov,.webm,.avi,.mkv,.svg"
                 disabled={isUploading}
                 className="hidden"
             />

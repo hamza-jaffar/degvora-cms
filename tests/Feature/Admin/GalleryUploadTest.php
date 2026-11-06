@@ -26,7 +26,8 @@ it('stores uploaded files and their gallery metadata', function () {
         ->get(route('admin.gallery.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->has('media.data', 1)
-            ->where('media.data.0.type', 'image'));
+            ->where('media.data.0.type', 'image')
+            ->where('media.data.0.storageUrl', '/storage/'.$gallery->path));
 });
 
 it('shows uploaded videos in the gallery media props', function () {

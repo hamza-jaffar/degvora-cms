@@ -2,9 +2,10 @@
 
 return [
     'features' => [
-        'product' => true,
+        'product' => false,
         'category' => true,
-        'theme' => true,
+        'theme' => false,
         'blog' => true,
+        'form' => true,
     ],
 ];

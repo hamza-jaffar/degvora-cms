@@ -74,6 +74,7 @@ export type PageIndexPageProps = {
 export type PageFormPageProps = {
     page: Page | null;
     parentPages: Pick<Page, 'id' | 'name' | 'slug'>[];
+    templates?: { value: string; label: string }[];
     media: { data: GalleryImage[] };
     counts: Record<'all' | 'image' | 'video' | 'other', number>;
     filter: 'all' | 'image' | 'video' | 'other';
@@ -129,6 +130,27 @@ export type PostFormPageProps = {
     counts: Record<'all' | 'image' | 'video' | 'other', number>;
     filter: 'all' | 'image' | 'video' | 'other';
     search: string;
+};
+
+export type FormSubmissionFilters = {
+    search: string;
+    status: string;
+    sort: string;
+    direction: string;
+    per_page: number;
+};
+
+export type FormSubmissionsPageProps = {
+    form: import('./data').Form;
+    submissions: import('./paginations').FormSubmissionPagination;
+    filters: FormSubmissionFilters;
+    stats: {
+        total: number;
+        unread: number;
+        read: number;
+        archived: number;
+        spam: number;
+    };
 };
 
 

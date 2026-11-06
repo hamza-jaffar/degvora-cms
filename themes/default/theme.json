@@ -1,0 +1,10 @@
+{
+    "name": "Default",
+    "slug": "default",
+    "version": "1.0.0",
+    "author": "Degvora",
+    "description": "Default DegvoraCMS theme",
+    "requires": {
+        "degvoracms": ">=1.0.0"
+    }
+}

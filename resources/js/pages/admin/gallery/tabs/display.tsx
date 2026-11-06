@@ -1,7 +1,9 @@
-import galleryRoutes from '@/routes/admin/gallery';
 import ConfirmationModal from '@/components/confirmation-modal';
+import galleryRoutes from '@/routes/admin/gallery';
 import { InfiniteScroll, router } from '@inertiajs/react';
 import {
+    Check,
+    Copy,
     ExternalLink,
     FileText,
     Film,
@@ -9,14 +11,17 @@ import {
     Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export type GalleryMedia = {
     id: number;
     name: string;
     alt: string;
+    path?: string;
     type: 'image' | 'video' | 'other';
     mimeType: string;
     url: string;
+    storageUrl?: string;
     size: number;
     width: number;
     height: number;
@@ -29,6 +34,29 @@ type DisplayTabProps = {
     hasAnyMedia: boolean;
     hasSearch: boolean;
 };
+
+const getStorageUrl = (asset: GalleryMedia): string => {
+    if (asset.storageUrl) {
+        return asset.storageUrl.startsWith('/')
+            ? asset.storageUrl
+            : `/${asset.storageUrl}`;
+    }
+    if (asset.path) {
+        return `/storage/${asset.path.replace(/^\/+/, '')}`;
+    }
+    const url = asset.url;
+    const storageIndex = url.indexOf('/storage/');
+    if (storageIndex !== -1) {
+        return url.substring(storageIndex);
+    }
+    try {
+        const parsed = new URL(url, window.location.origin);
+        return parsed.pathname;
+    } catch {
+        return url.startsWith('/') ? url : `/${url}`;
+    }
+};
+
 const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
 
@@ -63,6 +91,50 @@ const DisplayTab = ({
     const [deleteTarget, setDeleteTarget] = useState<GalleryMedia | null>(null);
     const [deleteError, setDeleteError] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [copiedId, setCopiedId] = useState<number | null>(null);
+
+    const handleCopyUrl = async (asset: GalleryMedia) => {
+        const storageUrl = getStorageUrl(asset);
+        let success = false;
+
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(storageUrl);
+                success = true;
+            }
+        } catch {
+            // fallback to textarea copy
+        }
+
+        if (!success) {
+            try {
+                const textArea = document.createElement('textarea');
+                textArea.value = storageUrl;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                success = document.execCommand('copy');
+                document.body.removeChild(textArea);
+            } catch {
+                success = false;
+            }
+        }
+
+        if (success) {
+            setCopiedId(asset.id);
+            toast.success('URL copied to clipboard');
+            window.setTimeout(() => {
+                setCopiedId((current) =>
+                    current === asset.id ? null : current,
+                );
+            }, 2000);
+        } else {
+            toast.error('Failed to copy URL');
+        }
+    };
 
     const deleteAsset = () => {
         if (!deleteTarget || isDeleting) return;
@@ -162,13 +234,30 @@ const DisplayTab = ({
                                         </div>
                                     )}
                                     <div className="absolute top-3 right-3 flex gap-2 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCopyUrl(asset)}
+                                            aria-label={`Copy URL for ${asset.name}`}
+                                            title={
+                                                copiedId === asset.id
+                                                    ? 'URL copied!'
+                                                    : 'Copy URL (/storage/...)'
+                                            }
+                                            className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-white/40 bg-black/55 text-white transition-colors hover:bg-black/75"
+                                        >
+                                            {copiedId === asset.id ? (
+                                                <Check className="size-4 text-emerald-400" />
+                                            ) : (
+                                                <Copy className="size-4" />
+                                            )}
+                                        </button>
                                         <a
                                             href={asset.url}
                                             target="_blank"
                                             rel="noreferrer"
                                             aria-label={`Open ${asset.name} in a new tab`}
                                             title="Open file"
-                                            className="flex size-8 items-center justify-center rounded-md border border-white/40 bg-black/55 text-white"
+                                            className="flex size-8 items-center justify-center rounded-md border border-white/40 bg-black/55 text-white transition-colors hover:bg-black/75"
                                         >
                                             <ExternalLink className="size-4" />
                                         </a>
@@ -180,42 +269,73 @@ const DisplayTab = ({
                                             }}
                                             aria-label={`Delete ${asset.name}`}
                                             title="Delete file"
-                                            className="flex size-8 items-center cursor-pointer justify-center rounded-md border border-white/40 bg-red-700/90 text-white hover:bg-red-800"
+                                            className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-white/40 bg-red-700/90 text-white transition-colors hover:bg-red-800"
                                         >
                                             <Trash2 className="size-4" />
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="flex items-start justify-between gap-3 p-3.5">
-                                    <div className="min-w-0">
-                                        <h3
-                                            className="truncate text-sm font-medium text-foreground"
-                                            title={asset.name}
+                                <div className="p-3.5">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <h3
+                                                className="truncate text-sm font-medium text-foreground"
+                                                title={asset.name}
+                                            >
+                                                {asset.name}
+                                            </h3>
+                                            <p className="mt-1 text-xs text-muted-foreground">
+                                                {asset.type === 'image' &&
+                                                asset.width > 0 &&
+                                                asset.height > 0
+                                                    ? `${asset.width} × ${asset.height} · `
+                                                    : ''}
+                                                {formatFileSize(asset.size)} ·{' '}
+                                                {formatDate(asset.createdAt)}
+                                            </p>
+                                        </div>
+                                        <span
+                                            className={`mt-0.5 shrink-0 rounded px-2 py-1 text-[11px] font-medium ${
+                                                asset.type === 'image'
+                                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+                                                    : asset.type === 'video'
+                                                      ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-300'
+                                                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
+                                            }`}
                                         >
-                                            {asset.name}
-                                        </h3>
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            {asset.type === 'image' &&
-                                            asset.width > 0 &&
-                                            asset.height > 0
-                                                ? `${asset.width} × ${asset.height} · `
-                                                : ''}
-                                            {formatFileSize(asset.size)} ·{' '}
-                                            {formatDate(asset.createdAt)}
-                                        </p>
+                                            {asset.type}
+                                        </span>
                                     </div>
-                                    <span
-                                        className={`mt-0.5 shrink-0 rounded px-2 py-1 text-[11px] font-medium ${
-                                            asset.type === 'image'
-                                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
-                                                : asset.type === 'video'
-                                                  ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-300'
-                                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
-                                        }`}
-                                    >
-                                        {asset.type}
-                                    </span>
+
+                                    <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/60 pt-2.5">
+                                        <code
+                                            className="max-w-[180px] truncate rounded bg-muted/80 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground select-all sm:max-w-[200px]"
+                                            title={getStorageUrl(asset)}
+                                        >
+                                            {getStorageUrl(asset)}
+                                        </code>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCopyUrl(asset)}
+                                            className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded border border-border bg-background px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                                            title="Copy relative storage URL"
+                                        >
+                                            {copiedId === asset.id ? (
+                                                <>
+                                                    <Check className="size-3 text-emerald-600 dark:text-emerald-400" />
+                                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                                        Copied
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy className="size-3 text-muted-foreground" />
+                                                    <span>Copy URL</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             </article>
                         );

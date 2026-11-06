@@ -16,8 +16,14 @@ class UpdatePageRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->input('parent_id') === '') {
+        if ($this->input('slug') === '/') {
             $this->merge(['parent_id' => null]);
+        } elseif ($this->input('parent_id') === '') {
+            $this->merge(['parent_id' => null]);
+        }
+
+        if ($this->has('template') && is_string($this->input('template'))) {
+            $this->merge(['template' => trim(str_replace('\\', '/', $this->input('template')), '/')]);
         }
     }
 
@@ -29,7 +35,7 @@ class UpdatePageRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9-]+$/', Rule::unique('pages', 'slug')->ignore($pageId)],
+            'slug' => ['required', 'string', 'max:255', 'regex:/^(\/|[a-z0-9-]+)$/', Rule::unique('pages', 'slug')->ignore($pageId)],
             'excerpt' => ['nullable', 'string', 'max:500'],
             'content' => ['nullable', 'string'],
             'parent_id' => ['nullable', 'integer', 'exists:pages,id', Rule::notIn([$pageId])],
@@ -41,7 +47,18 @@ class UpdatePageRequest extends FormRequest
             'visibility' => ['required', Rule::in(['public', 'private', 'password'])],
             'password' => ['nullable', 'string', 'max:255'],
             'published_at' => ['nullable', 'date'],
-            'template' => ['required', 'string', 'max:100'],
+            'template' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[a-zA-Z0-9_\-\/]+$/',
+                Rule::notIn(['404']),
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (is_string($value) && (str_ends_with($value, '/404') || str_contains($value, '..'))) {
+                        $fail('The selected template is invalid or restricted.');
+                    }
+                },
+            ],
             'sort_order' => ['required', 'integer', 'min:0'],
             'featured_media' => ['nullable', 'string', 'max:2048', 'exists:galleries,path'],
         ];
@@ -52,12 +69,23 @@ class UpdatePageRequest extends FormRequest
     {
         $validated = $this->validated();
         $slug = $validated['slug'];
-        $parent = $validated['parent_id'] !== null
-            ? Page::find($validated['parent_id'])
+
+        if ($slug === '/') {
+            $validated['parent_id'] = null;
+            $validated['path'] = '/';
+
+            return $validated;
+        }
+
+        $parentId = $validated['parent_id'] ?? null;
+        $parent = $parentId !== null
+            ? Page::find($parentId)
             : null;
 
-        $validated['path'] = $parent
-            ? $parent->path.'/'.$slug
+        $parentPath = $parent ? rtrim($parent->path, '/') : '';
+
+        $validated['path'] = $parentPath !== ''
+            ? $parentPath.'/'.$slug
             : '/'.$slug;
 
         return $validated;

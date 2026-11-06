@@ -55,13 +55,15 @@ const PageIndex = ({ pages: pageList, filters }: PageIndexPageProps) => {
         );
     };
 
+    const pageKey = (p: Page) => (p.slug === '/' ? String(p.id) : p.slug);
+
     const columns: DataTableColumn<Page>[] = [
         {
             key: 'page',
             header: 'Page',
             render: (row) => (
                 <Link
-                    href={pages.edit(row.slug).url}
+                    href={pages.edit(pageKey(row)).url}
                     className="flex min-w-0 items-center gap-3 text-left"
                 >
                     {row.featured_media_asset ? (
@@ -121,11 +123,23 @@ const PageIndex = ({ pages: pageList, filters }: PageIndexPageProps) => {
         {
             key: 'template',
             header: 'Template',
-            render: (row) => (
-                <span className="text-xs text-muted-foreground capitalize">
-                    {row.template}
-                </span>
-            ),
+            render: (row) => {
+                const normalized = (row.template === 'template' || row.template === 'default')
+                    ? (row.slug === '/' ? 'home' : (row.slug || 'page'))
+                    : row.template;
+                const templateFile = normalized === 'blank' ? 'No layout' : `${normalized}.blade.php`;
+
+                return (
+                    <div className="flex flex-col">
+                        <span className="font-mono text-xs text-foreground">
+                            {normalized}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                            {templateFile}
+                        </span>
+                    </div>
+                );
+            },
         },
         {
             key: 'visibility',
@@ -182,7 +196,7 @@ const PageIndex = ({ pages: pageList, filters }: PageIndexPageProps) => {
                         <>
                             <Button asChild variant="ghost" size="icon" className="size-8">
                                 <Link
-                                    href={pages.edit(row.slug).url}
+                                    href={pages.edit(pageKey(row)).url}
                                     aria-label={`Edit ${row.name}`}
                                     title="Edit page"
                                 >
@@ -354,7 +368,7 @@ const PageIndex = ({ pages: pageList, filters }: PageIndexPageProps) => {
                     if (!pageToDelete) {
                         return;
                     }
-                    router.delete(pages.destroy(pageToDelete.slug).url, {
+                    router.delete(pages.destroy(pageKey(pageToDelete)).url, {
                         preserveScroll: true,
                         onSuccess: () => setPageToDelete(null),
                     });

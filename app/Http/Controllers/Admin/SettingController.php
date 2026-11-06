@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateSiteSettingsRequest;
+use App\Models\Form;
 use App\Models\Gallery;
 use App\Models\Setting;
 use Illuminate\Database\Eloquent\Builder;
@@ -123,6 +124,13 @@ class SettingController extends Controller
             'seoImage' => $this->galleryImageData($settings->get('seo_image')?->value),
             'mailPasswordConfigured' => ($settings->get('mail_password')?->value ?? '') !== '',
             'timezones' => \DateTimeZone::listIdentifiers(),
+            'forms' => Form::query()
+                ->withCount([
+                    'submissions as submissions_count',
+                    'submissions as unread_submissions_count' => fn ($q) => $q->where('status', 'unread'),
+                ])
+                ->orderBy('name')
+                ->get(),
             ...$this->galleryPickerProps($request),
         ]);
     }

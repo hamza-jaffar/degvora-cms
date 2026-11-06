@@ -38,3 +38,7 @@ export type PostIndexPagination = RootStructure & {
     data: import('./data').Post[];
 };
 
+export type FormSubmissionPagination = RootStructure & {
+    data: import('./data').FormSubmission[];
+};
+

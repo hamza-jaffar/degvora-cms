@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'title',
@@ -85,5 +86,37 @@ class Post extends Model
     public function scopeFeatured(Builder $query): Builder
     {
         return $query->where('is_featured', true);
+    }
+
+    /**
+     * Get the resolved featured image URL.
+     */
+    public function getFeaturedImageUrlAttribute(): ?string
+    {
+        if (empty($this->featured_image)) {
+            return null;
+        }
+
+        if (
+            str_starts_with($this->featured_image, 'http://')
+            || str_starts_with($this->featured_image, 'https://')
+            || str_starts_with($this->featured_image, '//')
+        ) {
+            return $this->featured_image;
+        }
+
+        if (str_starts_with($this->featured_image, '/')) {
+            return $this->featured_image;
+        }
+
+        return Storage::disk('public')->url($this->featured_image);
+    }
+
+    /**
+     * Get the storefront URL for this post.
+     */
+    public function getUrlAttribute(): string
+    {
+        return url('/blog/'.$this->slug);
     }
 }

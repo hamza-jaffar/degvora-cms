@@ -11,7 +11,10 @@ class MenuService
 {
     public function get(string $name): ?Menu
     {
-        $menu = Menu::query()->where('name', $name)->first();
+        $menu = Menu::query()
+            ->where('name', $name)
+            ->orWhere('location', $name)
+            ->first();
 
         if ($menu === null) {
             return null;
@@ -27,28 +30,31 @@ class MenuService
                 ? 0
                 : (int) $item->parent_id,
         );
-        $pageSlugs = Page::query()
+        $pages = Page::query()
             ->whereIn(
                 'id',
                 $items->where('type', 'page')->pluck('reference_id')->filter()->unique(),
             )
-            ->pluck('slug', 'id');
+            ->get(['id', 'slug', 'path'])
+            ->keyBy('id');
 
         foreach ($items as $item) {
             $item->setRelation(
                 'children',
                 $itemsByParent->get((int) $item->id, new Collection),
             );
-            $item->setAttribute(
-                'href',
-                match ($item->type) {
-                    'custom' => $item->url,
-                    'page' => isset($pageSlugs[$item->reference_id])
-                        ? '/'.$pageSlugs[$item->reference_id]
-                        : '#',
-                    default => '#',
-                },
-            );
+
+            $href = '#';
+            if ($item->type === 'custom') {
+                $href = $item->url ?? '#';
+            } elseif ($item->type === 'page' && isset($pages[$item->reference_id])) {
+                $page = $pages[$item->reference_id];
+                $href = ! empty($page->path)
+                    ? '/'.ltrim($page->path, '/')
+                    : ($page->slug === '/' ? '/' : '/'.ltrim($page->slug, '/'));
+            }
+
+            $item->setAttribute('href', $href);
         }
 
         $menu->setRelation(

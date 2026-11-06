@@ -3,6 +3,8 @@
         Options -MultiViews -Indexes
     </IfModule>
 
+    Options +FollowSymLinks
+
     RewriteEngine On
 
     # Handle Authorization Header
@@ -17,6 +19,10 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
+
+    # Route /storage page (and subpages) to index.php if not an actual static file
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^storage(/.*)?$ index.php [L]
 
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d

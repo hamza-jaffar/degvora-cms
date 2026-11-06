@@ -166,3 +166,63 @@ export type Product = {
     created_at: string;
     deleted_at?: string | null;
 };
+
+export type FormFieldType =
+    | 'text'
+    | 'email'
+    | 'tel'
+    | 'number'
+    | 'textarea'
+    | 'select'
+    | 'radio'
+    | 'checkbox'
+    | 'date';
+
+export type FormField = {
+    id: string;
+    name: string;
+    label: string;
+    type: FormFieldType;
+    placeholder?: string;
+    help_text?: string;
+    required: boolean;
+    options?: string[];
+    width?: 'full' | 'half';
+};
+
+export type Form = {
+    id: number;
+    name: string;
+    slug: string;
+    description: string | null;
+    is_active: boolean;
+    submit_button_text: string;
+    success_message: string | null;
+    notification_email: string | null;
+    fields: FormField[];
+    submissions_count?: number;
+    unread_submissions_count?: number;
+    created_at: string;
+    updated_at?: string;
+    deleted_at?: string | null;
+};
+
+export type FormSubmission = {
+    id: number;
+    form_id: number;
+    form?: Pick<Form, 'id' | 'name' | 'slug'>;
+    data: Record<string, any>;
+    status: 'unread' | 'read' | 'archived' | 'spam';
+    ip_address: string | null;
+    user_agent: string | null;
+    is_starred: boolean;
+    created_at: string;
+    updated_at?: string;
+};
+
+export type NavForm = {
+    id: number;
+    name: string;
+    slug: string;
+    unread_count?: number;
+};

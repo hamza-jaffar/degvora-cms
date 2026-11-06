@@ -16,6 +16,23 @@ class Page extends Model
         return 'slug';
     }
 
+    public function getRouteKey(): mixed
+    {
+        return $this->slug === '/' ? (string) $this->id : $this->slug;
+    }
+
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        if (is_numeric($value) || $value === (string) (int) $value) {
+            $page = $this->where('id', $value)->first();
+            if ($page !== null) {
+                return $page;
+            }
+        }
+
+        return $this->where($field ?? $this->getRouteKeyName(), $value)->first();
+    }
+
     public function parent()
     {
         return $this->belongsTo(Page::class, 'parent_id');

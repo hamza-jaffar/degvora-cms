@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import SettingsLayout from "@/layouts/settings/layout";
 import settingRoutes from "@/routes/admin/setting";
+import FormsTab from "./tabs/forms-tab";
 import { Head, router, useForm } from "@inertiajs/react";
 import {
     countries,
@@ -137,6 +138,7 @@ interface PageProps {
     filter: MediaFilter;
     search: string;
     filterUrl: string;
+    forms?: import('@/types/data').Form[];
 }
 
 const settingsSections = [
@@ -144,6 +146,11 @@ const settingsSections = [
         id: "identity",
         label: "Identity",
         fields: ["name", "tagline", "logo_path", "favicon_path"],
+    },
+    {
+        id: "forms",
+        label: "Forms",
+        fields: [],
     },
     {
         id: "contact",
@@ -524,6 +531,7 @@ export default function SiteSettings({
     filter,
     search,
     filterUrl,
+    forms = [],
 }: PageProps) {
     const [selectedLogo, setSelectedLogo] = useState<GalleryImage | null>(
         logoImage,
@@ -2207,16 +2215,20 @@ export default function SiteSettings({
                     </CardContent>
                 </Card>
 
-                <div className="flex justify-end">
-                    <Button type="submit" disabled={processing}>
-                        {processing ? (
-                            <LoaderCircle className="animate-spin" />
-                        ) : (
-                            <Save />
-                        )}
-                        Save settings
-                    </Button>
-                </div>
+                {activeSection === "forms" && <FormsTab forms={forms} />}
+
+                {activeSection !== "forms" && (
+                    <div className="flex justify-end">
+                        <Button type="submit" disabled={processing}>
+                            {processing ? (
+                                <LoaderCircle className="animate-spin" />
+                            ) : (
+                                <Save />
+                            )}
+                            Save settings
+                        </Button>
+                    </div>
+                )}
             </form>
         </SettingsLayout>
     );
